@@ -127,10 +127,12 @@ Expected output includes:
 Created project 'm3-smoke-demo'.
 ```
 
-Confirm the project state exists:
+The preceding command creates `projects/` and the project state file. Confirm
+the project state exists with an explicit success message:
 
 ```bash
-test -f projects/m3-smoke-demo/state.json
+test -f projects/m3-smoke-demo/state.json \
+  && echo "Project state created: projects/m3-smoke-demo/state.json"
 ```
 
 ## 7. Execute the real-provider smoke run
