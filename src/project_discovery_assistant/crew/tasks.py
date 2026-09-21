@@ -1,7 +1,7 @@
 """Typed CrewAI task definitions and output envelopes."""
 
-from pydantic import BaseModel, ConfigDict, Field
 from crewai import Agent, Task
+from pydantic import BaseModel, ConfigDict, Field
 
 from project_discovery_assistant.models import (
     BacklogItem,

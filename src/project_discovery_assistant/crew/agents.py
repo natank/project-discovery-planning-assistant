@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from crewai import Agent, LLM
+from crewai import LLM, Agent
 
 
 @dataclass(frozen=True)
@@ -47,7 +47,9 @@ def build_agents(llm: LLM) -> DiscoveryAgents:
         ),
         requirements=Agent(
             role="Product requirements analyst",
-            goal="Derive testable requirements and user stories from validated context.",
+            goal=(
+                "Derive testable requirements and user stories from validated context."
+            ),
             backstory="You preserve traceability from outcomes to behavior.",
             **common,
         ),

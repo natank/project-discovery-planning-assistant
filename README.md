@@ -48,6 +48,15 @@ directory:
 uv run python scripts/validate_m2_cli.py
 ```
 
+Run the opt-in M3 CrewAI smoke validation for an existing local project:
+
+```bash
+uv run python scripts/smoke_crewai.py <project-id>
+```
+
+This command requires `OPENAI_API_KEY`, uses `MODEL_NAME`, and may incur
+provider charges. Use only synthetic, non-sensitive project input.
+
 The CLI entry point is installed as `pdpa` and currently exposes the command
 help surface while application workflow commands are delivered in later
 milestones:
