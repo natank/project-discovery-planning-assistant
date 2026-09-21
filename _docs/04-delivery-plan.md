@@ -13,7 +13,14 @@
 - **M0 implementation commits:** `d7ec815`, `6e59e12`, `99ef009`
 - **M0 validation:** 6 provider-free tests passed; Ruff format/lint, mypy,
   CLI help, and CrewAI `Process.sequential` compatibility checks passed
-- **Next workflow:** M1 kickoff
+- **M1 — Contract foundation:** Complete
+- **M1 kickoff PR:** [#9](https://github.com/natank/project-discovery-planning-assistant/pull/9)
+- **M1 implementation PR:** [#10](https://github.com/natank/project-discovery-planning-assistant/pull/10)
+- **M1 implementation commits:** `94310ea`, `a6f8060`, `f2621a7`, `43e3ec5`
+- **M1 validation:** 26 provider-free tests passed; Ruff format/lint and mypy
+  passed; model, traceability, persistence, state-retention, and event-redaction
+  checks passed
+- **Next workflow:** M2 kickoff
 
 ## Delivery objective
 
@@ -81,7 +88,7 @@ plausible generated output alone.
 | Milestone | Required stories | Exit criterion |
 | --- | --- | --- |
 | M0: Toolchain decision | DP-01 | Complete — documented local environment and default test command work from a clean checkout without a provider credential; evidence recorded above. |
-| M1: Contract foundation | DP-02, DP-03 | Validated contracts, local persistence, IDs, events, and invalid-package handling pass their unit tests without a model provider. |
+| M1: Contract foundation | DP-02, DP-03 | Complete — validated contracts, local persistence, IDs, events, and invalid-package handling pass provider-free tests; evidence recorded above. |
 | M2: Deterministic vertical slice | DP-04, DP-05, DP-06, DP-07 | The CLI creates and clarifies a project, then produces a validated draft Markdown package with the fake crew and no API key. |
 | M3: CrewAI integration | DP-08 | The real sequential CrewAI runner passes the shared adapter contract tests and an opt-in, non-sensitive provider smoke run yields a reviewable draft. |
 | M4: Reviewable release | DP-09, DP-10, DP-11, DP-12 | Correction, acceptance, export, stage visibility, failure handling, and release validation meet the PRD acceptance baseline. |
