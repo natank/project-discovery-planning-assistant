@@ -21,7 +21,10 @@ def test_settings_load_non_secret_values(monkeypatch: pytest.MonkeyPatch) -> Non
     assert settings.pdpa_log_level == "DEBUG"
 
 
-def test_provider_requirement_is_lazy_and_redacted() -> None:
+def test_provider_requirement_is_lazy_and_redacted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     settings = Settings(_env_file=None)
 
     with pytest.raises(ConfigurationError) as error:
