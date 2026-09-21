@@ -20,7 +20,15 @@
 - **M1 validation:** 26 provider-free tests passed; Ruff format/lint and mypy
   passed; model, traceability, persistence, state-retention, and event-redaction
   checks passed
-- **Next workflow:** M2 kickoff
+- **M2 — Deterministic vertical slice:** Complete
+- **M2 kickoff PR:** [#11](https://github.com/natank/project-discovery-planning-assistant/pull/11)
+- **M2 implementation PR:** [#12](https://github.com/natank/project-discovery-planning-assistant/pull/12)
+- **M2 implementation commits:** `c54acdb`, `b91da54`, `9b20974`, `89e6e9c`
+- **M2 validation:** 41 provider-free tests passed; the isolated
+  `scripts/validate_m2_cli.py` journey passed for `new` → `clarify` →
+  `generate`; Ruff format/lint and mypy passed; package IDs, traceability,
+  failure handling, stage events, and secret exclusion were verified
+- **Next workflow:** M3 kickoff
 
 ## Delivery objective
 
@@ -89,7 +97,7 @@ plausible generated output alone.
 | --- | --- | --- |
 | M0: Toolchain decision | DP-01 | Complete — documented local environment and default test command work from a clean checkout without a provider credential; evidence recorded above. |
 | M1: Contract foundation | DP-02, DP-03 | Complete — validated contracts, local persistence, IDs, events, and invalid-package handling pass provider-free tests; evidence recorded above. |
-| M2: Deterministic vertical slice | DP-04, DP-05, DP-06, DP-07 | The CLI creates and clarifies a project, then produces a validated draft Markdown package with the fake crew and no API key. |
+| M2: Deterministic vertical slice | DP-04, DP-05, DP-06, DP-07 | Complete — the CLI creates and clarifies a project, then produces a validated draft Markdown package with the fake crew and no API key; the provider-free suite, end-to-end CLI validation, failure paths, traceability, and secret-exclusion checks pass. |
 | M3: CrewAI integration | DP-08 | The real sequential CrewAI runner passes the shared adapter contract tests and an opt-in, non-sensitive provider smoke run yields a reviewable draft. |
 | M4: Reviewable release | DP-09, DP-10, DP-11, DP-12 | Correction, acceptance, export, stage visibility, failure handling, and release validation meet the PRD acceptance baseline. |
 

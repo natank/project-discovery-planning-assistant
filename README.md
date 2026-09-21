@@ -41,6 +41,13 @@ uv run ruff check .
 uv run mypy src
 ```
 
+Run the provider-free M2 end-to-end CLI validation in an isolated temporary
+directory:
+
+```bash
+uv run python scripts/validate_m2_cli.py
+```
+
 The CLI entry point is installed as `pdpa` and currently exposes the command
 help surface while application workflow commands are delivered in later
 milestones:

@@ -267,6 +267,7 @@ class ProjectState(ContractModel):
     """Persisted state envelope for one local project."""
 
     project_id: NonEmptyText
+    context: ProjectContext | None = None
     current_package: DiscoveryPackage | None = None
     accepted_package: DiscoveryPackage | None = None
     package_versions: list[int] = Field(default_factory=list)

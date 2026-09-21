@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from project_discovery_assistant.errors import StorageError
 from project_discovery_assistant.models import (
     DiscoveryPackage,
+    ProjectContext,
     ProjectState,
     RunEvent,
 )
@@ -59,6 +60,13 @@ class ProjectStore:
         if package.version not in state.package_versions:
             state.package_versions.append(package.version)
         self._write_package(package, markdown)
+        self._write_state(state)
+        return state
+
+    def save_context(self, context: ProjectContext) -> ProjectState:
+        """Persist idea-owner input before package generation."""
+        state = self._state_for_save(context.project_id)
+        state.context = context
         self._write_state(state)
         return state
 

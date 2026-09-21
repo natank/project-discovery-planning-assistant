@@ -209,6 +209,7 @@ before expanding the approved scope or changing the commit sequence.
 | Failure-path integration tests | Validate failed stage and invalid output behavior | No |
 | `uv run pytest` | Validate the provider-free suite | No |
 | Ruff and mypy commands | Validate formatting, lint, and typing | No |
+| `uv run python scripts/validate_m2_cli.py` | Validate the real CLI `new` → `clarify` → `generate` journey in an isolated directory | No |
 
 M2 does not require a live-provider smoke run. That evidence belongs to M3.
 
