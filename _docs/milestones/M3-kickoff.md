@@ -171,6 +171,7 @@ obtain review before changing the runner protocol or commit sequence.
 The smoke command must be excluded from the default suite and must fail
 explicitly when provider configuration is missing. Smoke input must be
 synthetic and must never include credentials or private project content.
+Execute the full procedure in [`M3-smoke-test.md`](./M3-smoke-test.md).
 
 ## Dependencies and risks
 
