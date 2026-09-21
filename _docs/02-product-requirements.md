@@ -61,7 +61,9 @@ Needs a concise and actionable understanding of the problem and proposed first
 release before estimating or implementing work.
 
 **Primary scenario:** reads the package, traces backlog items to requirements,
-checks acceptance criteria, and identifies unresolved risks.
+checks acceptance criteria, and identifies unresolved risks. In the initial
+release, this is an offline review of the exported discovery package; the
+delivery collaborator does not have a separate application interface.
 
 ### Reviewer or stakeholder
 
@@ -261,11 +263,14 @@ reasonable starting item.
 
 ### FR-12: Preserve traceability
 
-The product shall allow a reviewer to trace:
+The product shall generate stable identifiers and readable links or references
+so that a delivery collaborator or reviewer can trace:
 
 `problem or outcome → requirement → user story → acceptance criteria → backlog item`
 
-Missing or uncertain links shall be marked rather than silently omitted.
+The delivery collaborator or reviewer performs this verification by inspecting
+the generated package. Missing or uncertain links shall be marked rather than
+silently omitted.
 
 ### FR-13: Support review and correction
 
@@ -380,6 +385,8 @@ Acceptance criteria:
 - Every MVP story has observable acceptance criteria.
 - Criteria describe behavior rather than implementation choices.
 - Gaps in traceability are explicitly marked.
+- The links and identifiers are visible in the exported discovery package
+  without requiring access to the application.
 
 ### US-07: Start from the backlog
 
