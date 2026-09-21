@@ -3,6 +3,7 @@
 import os
 import re
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -11,6 +12,7 @@ from project_discovery_assistant.errors import StorageError
 from project_discovery_assistant.models import (
     DiscoveryPackage,
     ProjectState,
+    RunEvent,
 )
 
 PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
@@ -74,6 +76,46 @@ class ProjectStore:
         self._write_package(package, markdown)
         self._write_state(state)
         return state
+
+    def append_event(
+        self,
+        event: RunEvent,
+        *,
+        redactions: Iterable[str] = (),
+    ) -> None:
+        """Append one validated, redacted event to a project's JSONL log."""
+        directory = self.project_dir(event.project_id)
+        directory.mkdir(parents=True, exist_ok=True)
+        serialized = event.model_dump_json()
+        for secret in redactions:
+            if secret:
+                serialized = serialized.replace(secret, "[REDACTED]")
+        try:
+            with (directory / "run-events.jsonl").open(
+                "a",
+                encoding="utf-8",
+            ) as events_file:
+                events_file.write(serialized + "\n")
+                events_file.flush()
+                os.fsync(events_file.fileno())
+        except OSError as error:
+            raise StorageError("Could not persist run event.") from error
+
+    def load_events(self, project_id: str) -> list[RunEvent]:
+        """Load and validate all events for a project."""
+        path = self.project_dir(project_id) / "run-events.jsonl"
+        if not path.exists():
+            return []
+        events: list[RunEvent] = []
+        try:
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    events.append(RunEvent.model_validate_json(line))
+        except (OSError, UnicodeDecodeError, ValidationError) as error:
+            raise StorageError(
+                f"Could not load events for project '{project_id}'."
+            ) from error
+        return events
 
     def _state_for_save(self, project_id: str) -> ProjectState:
         try:
