@@ -44,3 +44,7 @@ select = ["E", "F", "I", "UP", "B"]
 python_version = "3.11"
 strict = true
 packages = ["project_discovery_assistant"]
+
+[[tool.mypy.overrides]]
+module = ["crewai.*", "numpy.*"]
+follow_imports = "skip"
