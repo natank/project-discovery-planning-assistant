@@ -60,7 +60,12 @@ def _task(
         description=(
             f"Use only the supplied input.\n\nInput:\n{inputs}\n\n"
             "Do not invent evidence, claim external validation, take external "
-            "actions, or include private reasoning."
+            "actions, or include private reasoning.\n\n"
+            "Use these exact stable identifier prefixes and numbering formats: "
+            "CQ-001 for clarification questions, RISK-001 for risks, REQ-001 "
+            "for product requirements, US-001 for user stories, and BL-001 "
+            "for backlog items. Preserve supplied identifiers; allocate the "
+            "next sequential identifier only when creating a new artifact."
         ),
         expected_output=expected,
         agent=agent,
