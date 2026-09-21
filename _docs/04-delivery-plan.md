@@ -28,7 +28,16 @@
   `scripts/validate_m2_cli.py` journey passed for `new` → `clarify` →
   `generate`; Ruff format/lint and mypy passed; package IDs, traceability,
   failure handling, stage events, and secret exclusion were verified
-- **Next workflow:** M3 kickoff
+- **M3 — CrewAI integration:** Complete
+- **M3 kickoff PR:** [#13](https://github.com/natank/project-discovery-planning-assistant/pull/13)
+- **M3 implementation PR:** [#14](https://github.com/natank/project-discovery-planning-assistant/pull/14)
+- **M3 implementation commits:** `10c6e45`, `3031aed`, `c42b9ef`, `577b5f9`,
+  `62e01a1`, `8061feb`, `f886a85`, `2429949`
+- **M3 validation:** 45 provider-free tests passed; mocked CrewAI adapter,
+  typed task-boundary, retry, failure, configuration, Ruff, and mypy checks
+  passed; the opt-in smoke run produced a reviewable draft and redacted stage
+  events; canonical artifact-prefix instructions were added after smoke review
+- **Next workflow:** M4 kickoff
 
 ## Delivery objective
 
@@ -98,7 +107,7 @@ plausible generated output alone.
 | M0: Toolchain decision | DP-01 | Complete — documented local environment and default test command work from a clean checkout without a provider credential; evidence recorded above. |
 | M1: Contract foundation | DP-02, DP-03 | Complete — validated contracts, local persistence, IDs, events, and invalid-package handling pass provider-free tests; evidence recorded above. |
 | M2: Deterministic vertical slice | DP-04, DP-05, DP-06, DP-07 | Complete — the CLI creates and clarifies a project, then produces a validated draft Markdown package with the fake crew and no API key; the provider-free suite, end-to-end CLI validation, failure paths, traceability, and secret-exclusion checks pass. |
-| M3: CrewAI integration | DP-08 | The real sequential CrewAI runner passes the shared adapter contract tests and an opt-in, non-sensitive provider smoke run yields a reviewable draft. |
+| M3: CrewAI integration | DP-08 | Complete — the real sequential CrewAI runner passes the shared adapter contract tests; the opt-in non-sensitive provider smoke procedure produced a reviewable draft and redacted stage events; canonical artifact-prefix instructions are enforced in task prompts. |
 | M4: Reviewable release | DP-09, DP-10, DP-11, DP-12 | Correction, acceptance, export, stage visibility, failure handling, and release validation meet the PRD acceptance baseline. |
 
 DP-11 may begin after DP-04 because its failure and status behavior applies to
