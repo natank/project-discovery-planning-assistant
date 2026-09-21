@@ -8,5 +8,10 @@ app = typer.Typer(
 )
 
 
+@app.callback()
+def main() -> None:
+    """Run the Project Discovery and Planning Assistant."""
+
+
 if __name__ == "__main__":
     app()
