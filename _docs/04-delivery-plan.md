@@ -5,6 +5,16 @@
 [`03-technical-design.md`](./03-technical-design.md)
 **Scope:** Initial end-to-end demonstration release
 
+## Current execution status
+
+- **M0 — Toolchain decision:** Complete
+- **M0 kickoff PR:** [#7](https://github.com/natank/project-discovery-planning-assistant/pull/7)
+- **M0 implementation PR:** [#8](https://github.com/natank/project-discovery-planning-assistant/pull/8)
+- **M0 implementation commits:** `d7ec815`, `6e59e12`, `99ef009`
+- **M0 validation:** 6 provider-free tests passed; Ruff format/lint, mypy,
+  CLI help, and CrewAI `Process.sequential` compatibility checks passed
+- **Next workflow:** M1 kickoff
+
 ## Delivery objective
 
 Deliver a locally runnable CrewAI demonstration in which an idea owner creates
@@ -70,7 +80,7 @@ plausible generated output alone.
 
 | Milestone | Required stories | Exit criterion |
 | --- | --- | --- |
-| M0: Toolchain decision | DP-01 | The documented local environment and default test command work from a clean checkout without a provider credential. |
+| M0: Toolchain decision | DP-01 | Complete — documented local environment and default test command work from a clean checkout without a provider credential; evidence recorded above. |
 | M1: Contract foundation | DP-02, DP-03 | Validated contracts, local persistence, IDs, events, and invalid-package handling pass their unit tests without a model provider. |
 | M2: Deterministic vertical slice | DP-04, DP-05, DP-06, DP-07 | The CLI creates and clarifies a project, then produces a validated draft Markdown package with the fake crew and no API key. |
 | M3: CrewAI integration | DP-08 | The real sequential CrewAI runner passes the shared adapter contract tests and an opt-in, non-sensitive provider smoke run yields a reviewable draft. |
