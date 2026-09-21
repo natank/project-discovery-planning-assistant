@@ -45,3 +45,29 @@ def test_clarify_lists_empty_questions(
 
     assert result.exit_code == 0
     assert "No clarification questions" in result.stdout
+
+
+def test_generate_command_writes_markdown_package(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("PDPA_PROJECTS_DIR", str(tmp_path / "projects"))
+    runner = CliRunner()
+    runner.invoke(
+        app,
+        [
+            "new",
+            "--project-id",
+            "demo",
+            "--idea",
+            "Create a plan",
+            "--target-user",
+            "Idea owner",
+        ],
+    )
+
+    result = runner.invoke(app, ["generate", "demo"])
+
+    assert result.exit_code == 0
+    assert "Generated package v001" in result.stdout
+    assert (tmp_path / "projects" / "demo" / "package-v001.md").exists()

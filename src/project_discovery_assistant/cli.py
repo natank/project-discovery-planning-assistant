@@ -11,7 +11,9 @@ from project_discovery_assistant.services.intake import (
     create_project,
     update_clarification,
 )
+from project_discovery_assistant.services.orchestration import generate_project
 from project_discovery_assistant.services.project_store import ProjectStore
+from project_discovery_assistant.services.runner import DeterministicRunner, RunnerError
 
 app = typer.Typer(
     help="Explore and plan a software project from an initial idea.",
@@ -113,6 +115,32 @@ def clarify(
         typer.echo(f"Could not update clarification: {error}", err=True)
         raise typer.Exit(code=1) from error
     typer.echo(f"Updated clarification '{question_id}' to {status}.")
+
+
+@app.command()
+def generate(
+    project_id: Annotated[str, typer.Argument(help="Project identifier.")],
+) -> None:
+    """Generate a deterministic draft discovery package."""
+    store = ProjectStore(Settings().resolved_projects_dir())
+    try:
+        package = generate_project(store, DeterministicRunner(), project_id)
+    except (StorageError, RunnerError, ValueError) as error:
+        typer.echo(f"Could not generate package: {error}", err=True)
+        raise typer.Exit(code=1) from error
+    typer.echo(
+        f"Generated package v{package.version:03d} with status "
+        f"'{package.generation_status.value}'."
+    )
+    package_path = store.project_dir(project_id) / f"package-v{package.version:03d}.md"
+    typer.echo(f"Package: {package_path}")
+    if package.quality_report.findings:
+        typer.echo(
+            f"Quality findings: {len(package.quality_report.findings)}. "
+            "Review before acceptance."
+        )
+    else:
+        typer.echo("Next action: review the generated package.")
 
 
 if __name__ == "__main__":
