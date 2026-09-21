@@ -261,3 +261,36 @@ class DiscoveryPackage(ContractModel):
         if value < 1:
             raise ValueError("version must be positive")
         return value
+
+
+class ProjectState(ContractModel):
+    """Persisted state envelope for one local project."""
+
+    project_id: NonEmptyText
+    current_package: DiscoveryPackage | None = None
+    accepted_package: DiscoveryPackage | None = None
+    package_versions: list[int] = Field(default_factory=list)
+    review_decisions: list[ReviewDecision] = Field(default_factory=list)
+
+
+class RunOutcome(StrEnum):
+    """Outcome of a persisted workflow event."""
+
+    STARTED = "started"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
+class RunEvent(ContractModel):
+    """Safe, structured event for a workflow stage."""
+
+    timestamp: datetime
+    project_id: NonEmptyText
+    package_version: int | None = Field(default=None, ge=1)
+    stage: NonEmptyText
+    task_name: NonEmptyText
+    outcome: RunOutcome
+    duration_ms: int | None = Field(default=None, ge=0)
+    error_category: NonEmptyText | None = None
+    error_message: NonEmptyText | None = None

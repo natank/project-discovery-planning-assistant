@@ -16,6 +16,7 @@ from project_discovery_assistant.models import (
     Priority,
     ProductRequirement,
     ProjectContext,
+    ProjectState,
     ProvenanceClaim,
     QualityFinding,
     QualityReport,
@@ -140,3 +141,18 @@ def test_review_decision_is_typed_and_timestamped() -> None:
     )
 
     assert decision.decision == ReviewDecisionType.ACCEPT
+
+
+def test_project_state_round_trips_with_package_versions() -> None:
+    package = make_package()
+    state = ProjectState(
+        project_id=package.project_id,
+        current_package=package,
+        accepted_package=package,
+        package_versions=[1],
+    )
+
+    restored = ProjectState.model_validate_json(state.model_dump_json())
+
+    assert restored.package_versions == [1]
+    assert restored.accepted_package == package
