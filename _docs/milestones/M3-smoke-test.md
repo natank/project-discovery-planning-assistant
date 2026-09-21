@@ -74,9 +74,18 @@ OPENAI_API_KEY=replace-with-a-valid-key
 MODEL_NAME=gpt-4o-mini
 # Optional:
 # OPENAI_BASE_URL=https://api.openai.com/v1
-# PDPA_PROJECTS_DIR=./projects
 # PDPA_LOG_LEVEL=INFO
 ```
+
+For this runbook, use an explicit repository-local artifact directory so the
+commands and inspection paths are deterministic:
+
+```bash
+export PDPA_PROJECTS_DIR="$PWD/projects"
+```
+
+If `PDPA_PROJECTS_DIR` is already set in `.env`, this shell export overrides it
+for the current terminal session.
 
 Verify configuration without displaying the secret:
 
