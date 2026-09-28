@@ -554,6 +554,21 @@ escalation gate. A validation failure that exhausts its retry cap becomes a
 failed run (NFR-05), surfaced to the idea owner with a useful next action
 (FR-16), not a mid-run request for human input.
 
+**S1 is the one exception to "pass leads directly to next stage" in the
+diagram above.** For every other stage, `pass` genuinely does mean the next
+stage starts immediately. For S1, `pass` means S1 produced a valid question
+list (or an explicit no-questions/out-of-boundary result) — it does **not**
+mean S2 starts immediately. Who answers S1's questions, and when S2 is
+allowed to start, is specified in S1's own row of the per-stage table
+above: the idea owner answers, skips, or defers each question (FR-03), and
+S2 does not run until that response is recorded. If S1 produces zero
+questions, this step is skipped and S2 starts immediately, consistent with
+"pass leads directly to next stage" holding in that specific case. The
+generic envelope diagram omits this pause because it is one stage's
+exception, not the shape every stage follows; it is drawn explicitly in
+step 1's sequence diagram, which this note cross-references rather than
+repeats.
+
 ### System-level termination
 
 Beyond each stage's own success/failure/exhausted outcomes, the run as a
