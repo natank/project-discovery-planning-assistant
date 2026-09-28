@@ -96,7 +96,7 @@ and one output:
 | Stage | Responsibility | Inputs | Output | Capabilities needed | FRs |
 |---|---|---|---|---|---|
 | S1: Assess clarification needs | Identify ambiguity, contradiction, or missing context material enough to affect discovery or scope, including input that falls outside the product boundary entirely (FR-15); produce a bounded set of prioritized questions, or explicitly none. | The idea owner's raw input (idea, target user, outcome, constraints — any of which may be blank) | A bounded list of clarification questions (each with a reason it matters), or an explicit no-questions-needed result | None — reasons only from supplied input; no external lookup | FR-02, FR-03, FR-15 |
-| S2: Frame the problem | Produce a coherent discovery summary: problem statement, target users, stakeholders, needs, outcomes, constraints — every claim labeled provided / inferred / assumption / open question. | Idea owner's raw input, plus the idea owner's answers, skips, or deferrals given in response to S1's questions | A `DiscoverySummary`-shaped artifact with certainty labels on every material claim | None | FR-04, FR-05 |
+| S2: Frame the problem | Produce a coherent discovery summary: problem statement, target users, stakeholders, needs, outcomes, constraints — every claim labeled provided / inferred / assumption / open question. | The idea owner's original raw input (unchanged since before S1 ran), plus the idea owner's answers, skips, or deferrals collected after S1 completes | A `DiscoverySummary`-shaped artifact with certainty labels on every material claim | None | FR-04, FR-05 |
 | S3: Propose scope and risks | Propose a focused MVP boundary (included capabilities, non-goals, trade-offs, follow-ons) and the material risks that boundary creates, each carrying its own certainty label. | The discovery summary from S2 | A scope proposal plus a list of risks (each with impact, certainty, and a suggested validation/mitigation) | None | FR-05, FR-06, FR-07 |
 | S4: Specify requirements, stories, and acceptance criteria | Derive testable, prioritized, certainty-labeled requirements from the scope, express them as user stories, and give each MVP story observable acceptance criteria — as one coherent, internally-consistent set. | Discovery summary, scope, and risks from S2/S3 | Requirements, user stories (linked to requirements), and acceptance criteria (linked to stories) | None | FR-05, FR-08, FR-09, FR-10 |
 | S5: Plan delivery | Turn requirements and stories into a prioritized, dependency-aware backlog with a validation method per item, MVP work separated from future work, unresolved blocking risks/questions carried onto each affected item, and a reasonable starting point identified. | Requirements and stories from S4; risks and follow-ons from S3; open questions from S2 | A backlog: item, outcome, linked story/requirement, priority, dependencies, validation method, unresolved blockers | None | FR-11 |
@@ -502,8 +502,8 @@ its own.
 
 | Stage | Memory | Validation | Termination | Human interface |
 |---|---|---|---|---|
-| S1: Assess clarification needs | In: the idea owner's raw input, persisted at intake. Out: the question list (or no-questions/out-of-boundary result), persisted before the pause described below. No cross-run role beyond this — S1 does not need prior-run history, since it only ever runs once per project. | Shape: output matches the clarification-question schema (question, reason, priority) or one of the two explicit alternative results. Content: each question's stated reason must reference something present in the raw input (a check against fabricated rationale) — reject and retry within this stage's own call if a question has no traceable reason. | Success: a valid question list (zero or more) or a valid out-of-boundary result. Failure: the reasoning-core call produces no parseable output after retry. Exhausted: not applicable at the per-call level (single call, per question 1 above) but applicable at the project level if S1 cannot produce valid output after a small, fixed number of attempts (e.g., 2) — treated as a configuration/provider failure, not a content problem. | None required to run S1 itself. The mandatory pause is *after* S1 completes: the idea owner answers, skips, or defers each question (FR-03) before S2 can run. If the idea owner never responds, the project remains in a pending-input state indefinitely rather than proceeding with fabricated answers (NFR-02) — there is no timeout that silently substitutes a default. |
-| S2: Frame the problem | In: the idea owner's raw input plus their answers/skips/deferrals from S1's pause. Out: the discovery summary, including the structured open-questions field from question 4 above, persisted so S3 (and a later regeneration) can read it without re-running S1 or S2. | Shape: output matches the `DiscoverySummary` schema, and every material claim carries one of the four certainty labels (FR-05) — reject if any required claim is unlabeled. Content: every question skipped or deferred in S1 must appear in S2's structured open-questions field (the check that resolves question 4) — reject and retry if any is missing. | Success: a certainty-labeled, schema-valid summary with no missing carried-forward question. Failure: schema-invalid output, or a missing carried-forward question, after retry. Exhausted: a small fixed retry cap (consistent with S1), beyond which this is a provider/configuration failure rather than a content one. | None. S2 does not pause for approval; its output's certainty labels are what make its uncertainty visible downstream (per question 2), not a gate that stops the pipeline. |
+| S1: Assess clarification needs | In: the idea owner's raw input, written to memory by the outer control loop before S1 is invoked (see "Outer-loop concerns" below — this is not S1's own action). Out: the question list (or no-questions/out-of-boundary result), persisted for the outer loop and for S2 to read. No cross-run role beyond this — S1 does not need prior-run history, since it only ever runs once per project. | Shape: output matches the clarification-question schema (question, reason, priority) or one of the two explicit alternative results. Content: each question's stated reason must reference something present in the raw input (a check against fabricated rationale) — reject and retry within this stage's own call if a question has no traceable reason. | Success: a valid question list (zero or more) or a valid out-of-boundary result. Failure: the reasoning-core call produces no parseable output after retry. Exhausted: not applicable at the per-call level (single call, per question 1 above) but applicable at the project level if S1 cannot produce valid output after a small, fixed number of attempts (e.g., 2) — treated as a configuration/provider failure, not a content problem. | None required to run S1 itself. The pause where the idea owner answers, skips, or defers each question happens after S1 completes and is not part of S1's own envelope — see "Outer-loop concerns" below. |
+| S2: Frame the problem | In: two inputs of different provenance, both read from memory by the outer control loop when it invokes S2 — the idea owner's original raw input (written before S1 ran) and the answers/skips/deferrals collected during the pause after S1 (see "Outer-loop concerns" below). Out: the discovery summary, including the structured open-questions field from question 4 above, persisted so S3 (and a later regeneration) can read it without re-running S1 or S2. | Shape: output matches the `DiscoverySummary` schema, and every material claim carries one of the four certainty labels (FR-05) — reject if any required claim is unlabeled. Content: every question skipped or deferred in S1 must appear in S2's structured open-questions field (the check that resolves question 4) — reject and retry if any is missing. | Success: a certainty-labeled, schema-valid summary with no missing carried-forward question. Failure: schema-invalid output, or a missing carried-forward question, after retry. Exhausted: a small fixed retry cap (consistent with S1), beyond which this is a provider/configuration failure rather than a content one. | None. S2 does not pause for approval; its output's certainty labels are what make its uncertainty visible downstream (per question 2), not a gate that stops the pipeline. |
 | S3: Propose scope and risks | In: the discovery summary from S2. Out: the scope proposal (with `included_capabilities`, `non_goals`, `follow_ons` as distinct fields per step 2's fix) and the risk list, persisted independently so S4 and S5 can each read exactly what they need without re-running S2 or S3. | Shape: output matches the scope/risk schema, `included_capabilities` and `non_goals` are disjoint sets (a capability cannot be both included and excluded — a structural check directly enforcing the step 2 fix), every risk has an impact, a certainty label, and a suggested validation/mitigation. Content: every excluded capability or open question from S2 that plausibly creates a risk must have a corresponding risk entry (the check step 1 already named: "omit a risk directly implied by an excluded capability... " is a must-never for the configuration; this is its validation-side enforcement). | Success: schema-valid, disjoint scope sets, risk coverage check passes. Failure: `included_capabilities`/`non_goals` overlap, or a risk-coverage gap, after retry. Exhausted: same fixed retry cap as S1/S2. | None required to run. Whether a human should confirm the scope boundary before S4 builds requirements against it was considered under question 2 and rejected as a mandatory gate — S4's requirements are traceably reversible (a later correction to S3 triggers S4's re-run, per question 3), so a blocking approval here is not required by the product requirements, only a single end-of-run review. |
 | S4: Specify requirements, stories, and acceptance criteria | In: discovery summary (S2), scope and risks (S3). Out: requirements, stories, and acceptance criteria, persisted together as one unit (they are validated together, per the check below) so a regeneration of S4 has a single, complete artifact to replace. | Shape: output matches the requirements/story/acceptance-criteria schema. Content, mechanically checked per the step 2 fix: every requirement's source capability is a member of S3's `included_capabilities`, not of `non_goals` or `follow_ons` — reject and retry if any requirement traces to an excluded capability; every MVP story has at least one linked requirement and at least one acceptance criterion — reject if any story is missing either. | Success: schema-valid, every requirement in-scope, every story has a requirement and criteria. Failure: an out-of-scope requirement, or a story missing a link or criteria, after retry. Exhausted: same fixed retry cap. | None required to run. This is the stage flagged as an open reliability question (question 5); its validation check is the concrete mitigation available at this step, and the check is content-specific enough (traces the exact step 2 fix) that a validation failure here is informative rather than a generic reject. |
 | S5: Plan delivery | In: requirements and stories (S4); risks and follow-ons (S3); open questions (S2) — the accumulated-inputs case step 1 identified as the main memory constraint. Out: the backlog, persisted as the final generation-stage artifact before assembly (traceability, export) takes over. | Shape: output matches the backlog schema; every item has a priority, a validation method, and at least one dependency reference or an explicit "no dependencies" marker. Content: every backlog item links to at least one S4 requirement or story (no orphaned items); every item's "unresolved blockers" field is checked against S3's risk list and S2's open-question list for anything that plausibly blocks it, rather than left empty by default; at least one item is marked as the starting item. | Success: schema-valid, every item linked, blockers populated where applicable, a starting item identified. Failure: an orphaned item, an empty blockers field where S3/S2 clearly named a relevant risk or question, or no starting item, after retry. Exhausted: same fixed retry cap. | None required to run S5 itself. S5's completion is what makes the draft package complete and ready for the single end-of-run human review (FR-13), which is the human-interface point for the run as a whole rather than for S5 specifically. |
@@ -554,20 +554,78 @@ escalation gate. A validation failure that exhausts its retry cap becomes a
 failed run (NFR-05), surfaced to the idea owner with a useful next action
 (FR-16), not a mid-run request for human input.
 
-**S1 is the one exception to "pass leads directly to next stage" in the
-diagram above.** For every other stage, `pass` genuinely does mean the next
-stage starts immediately. For S1, `pass` means S1 produced a valid question
-list (or an explicit no-questions/out-of-boundary result) — it does **not**
-mean S2 starts immediately. Who answers S1's questions, and when S2 is
-allowed to start, is specified in S1's own row of the per-stage table
-above: the idea owner answers, skips, or defers each question (FR-03), and
-S2 does not run until that response is recorded. If S1 produces zero
-questions, this step is skipped and S2 starts immediately, consistent with
-"pass leads directly to next stage" holding in that specific case. The
-generic envelope diagram omits this pause because it is one stage's
-exception, not the shape every stage follows; it is drawn explicitly in
-step 1's sequence diagram, which this note cross-references rather than
-repeats.
+The diagram's "pass leads to next stage" arrow describes every stage
+*except* the step between S1 and S2, which is not a stage property at all
+— it is covered separately below, in "Outer-loop concerns," since it
+belongs to the outer control loop rather than to either stage's envelope.
+
+### Outer-loop concerns
+
+The per-stage table and the envelope diagram above describe what happens
+inside each stage's own boundary. Two things in this design belong to the
+outer control loop instead — the orchestrator that invokes each stage and
+sequences them — and are recorded here rather than attributed to a stage,
+per the base document's step 4 guidance.
+
+**Writing the idea owner's raw input into memory.** Before S1 can run, the
+idea owner's raw input has to already be in memory for S1 to read (S1's
+memory row above says "persisted at intake," which describes *that* it is
+persisted, not *who* persists it). Persisting it is not part of S1 itself
+— S1's inner loop begins only once that input already exists in memory —
+so it is the outer control loop's responsibility, performed once, as the
+very first action of a run, before S1 is invoked at all:
+
+```
+  Idea owner provides raw input (FR-01, intake; not a stage)
+        |
+        v
+  Outer control loop writes it to memory
+        |
+        v
+  Outer control loop invokes S1
+```
+
+**The pause between S1 and S2.** For every stage except S1, `pass` in the
+envelope diagram above genuinely does mean the next stage starts
+immediately. Between S1 and S2 specifically, S1's own completion (a valid
+question list, or an explicit no-questions/out-of-boundary result) does
+not mean S2 starts — the idea owner must first answer, skip, or defer each
+question (FR-03). This is not an escalation out of S1's own validation (S1
+already passed); it is the outer control loop invoking the human-interface
+component as its own step between two stage invocations, the same way it
+invokes each stage itself:
+
+```
+  Outer control loop invokes S1
+        |
+        v
+  S1 completes (passes validation): a question list, or explicit
+  no-questions/out-of-boundary result
+        |
+        v
+  Outer control loop invokes the human-interface component
+  (idea owner answers, skips, or defers each question; skipped
+  if S1 returned zero questions)
+        |
+        v
+  Outer control loop invokes S2, reading:
+    - the original raw input, written to memory before S1 ran
+    - the answers/skips/deferrals just collected
+```
+
+The second diagram also corrects an imprecision in S2's memory row above:
+S2's two inputs are not both "given in response to S1's questions." The
+raw input was written once, before S1 ever ran; only the
+answers/skips/deferrals are new, collected after S1 completes. Both are
+read from memory by S2 when the outer loop invokes it — S2 does not receive
+either directly from the idea owner.
+
+If the idea owner never responds to the pause, the project remains in a
+pending-input state indefinitely rather than proceeding with fabricated
+answers (NFR-02) — there is no timeout that silently substitutes a default;
+this restates what S1's human-interface cell already says, attributed here
+to the outer loop rather than to S1, since S1 has already completed by the
+time this wait begins.
 
 ### System-level termination
 
