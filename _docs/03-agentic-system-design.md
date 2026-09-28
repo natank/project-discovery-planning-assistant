@@ -27,18 +27,12 @@ onto the relationships defined in the base document, and which of those
 relationships CrewAI absorbs versus which remain the application's
 responsibility.
 
+Reviews of each step are kept in [`reviews/`](./reviews/), starting with
+the [step 1 review](./reviews/03-step1-review.md).
+
 ## Introduction
 
-The previous technical design for this project (since removed; see
-[pull request #15](https://github.com/natank/project-discovery-planning-assistant/pull/15))
-committed to CrewAI as its first architecture decision, before working
-through a framework-agnostic decomposition of the product requirements.
-That made it difficult to see, after the fact, which control-loop
-responsibilities the framework was actually absorbing and which had been
-implemented by hand in application code — the two were established
-together, in framework vocabulary, from the start.
-
-This document restarts the design from
+This document derives the system design from
 [`02-product-requirements.md`](./02-product-requirements.md) alone, which
 explicitly defers "framework and agent topology," model provider, and other
 implementation choices to technical design. The design process is applied
@@ -60,11 +54,10 @@ in order:
    or otherwise) and record which of the six relationships it absorbs
    versus which remain application code.
 
-Each step is worked through independently against the requirements, before
-comparing the result to the removed technical design. The goal is a design
-that can name, for every stage, exactly which component is responsible for
-which of the six relationships — the gap identified when reviewing the
-original technical design against this same process.
+Each step is worked through against the requirements. The goal is a design
+that names, for every stage, exactly which component is responsible for
+each of the six relationships, with the framework chosen only after that is
+settled.
 
 ## Step 1 — Stages and sequence
 
@@ -216,27 +209,6 @@ whichever stage is affected, not as an automatic loop — that is
 control-relationship (human interface and termination) design, deferred to
 step 4.
 
-### Comparison with the removed technical design
-
-The removed technical design (PR #15) reached a similar stage list —
-clarification, discovery framing, scope/risk, requirements, delivery
-planning, quality review — arrived at directly in CrewAI's vocabulary
-(`Agent`/`Task` roles) rather than derived independently first. Two
-differences are worth naming: that design included a sixth, explicit
-quality-review stage, where this document treats structural and semantic
-validation as a control relationship (step 4) applied to each stage's
-output rather than a stage of its own; and it placed the idea-owner pause
-between clarification and framing at a CLI command boundary (`pdpa clarify`
-→ `pdpa generate`), outside the crew, then ran clarification assessment a
-second time as the first task *inside* the crew. The pause existed, but
-repeating clarification inside the generation pipeline blurred the line
-between the clarification stage and the human pause that follows it. This
-document instead runs S1 once and shows the pause as its own step (see
-finding 1 of the [step 1 review](./reviews/03-step1-review.md)). Both
-differences are revisited once step 4 is complete, since either could
-change once validation and human-interface design are worked through
-explicitly rather than assumed.
-
 ### Open questions carried into later steps
 
 - Whether S1 (clarification) should be able to run again mid-sequence
@@ -244,11 +216,7 @@ explicitly rather than assumed.
   ever runs once, at the start — this is a termination/control question for
   step 4, not a sequencing question, since the requirements do not
   currently describe generation-time re-clarification as a first-class
-  path (FR-03 describes the *initial* bounded question set). The removed
-  technical design took a position on this: it bounded the first question
-  set and allowed "a later generation [to] surface additional open
-  questions only when they materially affect scope, risk, or acceptance
-  criteria." That policy is a candidate answer to evaluate in step 4.
+  path (FR-03 describes the *initial* bounded question set).
 - Whether S4's bundling (requirements + stories + acceptance criteria in
   one stage) remains viable once step 2 defines the reasoning-core
   configuration for it, or whether the combined responsibility is too large
