@@ -329,7 +329,78 @@ than to tool access.
 
 ## Step 3 — Capability contracts
 
-_Pending._
+Step 1 and step 2 each concluded, independently, that none of the five
+stages needs a capability beyond reasoning over supplied context. That
+conclusion is re-checked here directly against the requirements, rather
+than simply carried forward, since a design step that only restates an
+earlier step's output without re-examining it against the source is exactly
+how the step 2 review's MVP-boundary gap slipped through — the earlier
+draft trusted "traceable to the scope proposal" without checking what the
+scope proposal actually contained.
+
+### Re-checking against the requirements
+
+Searching `02-product-requirements.md` for anything that would imply a
+stage needs to look up, compute, write, or ask beyond what step 1 and step
+2 already assumed:
+
+- The **non-goals** section rules out market validation, replacing domain
+  expertise, external system integration, and multi-project/workspace
+  management — none of which any of the five stages would need a
+  capability for even if they were in scope.
+- **NFR-02** ("must not take irreversible external actions") and the
+  architecture-level non-goal against external search, retrieval, or
+  research integrations both rule out a stage having a write or lookup
+  capability by design, not merely by omission — this is a constraint the
+  product actively enforces, not an area the requirements are simply silent
+  on.
+- **FR-15** ("It shall either ask for clarification or produce a visibly
+  qualified partial package") could be misread as implying an "ask"
+  capability in the sense the base document lists (relationship 2, a tool
+  the reasoning core calls mid-task). It does not: FR-15's "ask for
+  clarification" is exactly what S1 already does as its entire
+  responsibility — producing a bounded list of clarification questions,
+  which is S1's ordinary output, not an interruption S1 makes mid-task via
+  a tool call. No stage in this design produces output, then pauses,
+  then asks a follow-up question through a capability; the one guaranteed
+  pause in the whole system is the human-interface point after S1
+  completes (step 1's sequence), not a tool any stage invokes.
+
+Nothing else in the functional requirements, non-functional requirements,
+or backlog implies a stage-level capability. The conclusion from steps 1
+and 2 holds.
+
+### Capability contracts
+
+There are no capability contracts to specify. No stage's configuration
+(step 2) lists an allowed tool, so there is no business logic, argument
+schema, failure mode, retry policy, or approval requirement to define at
+this step. This is a legitimate, checked outcome of the design process, not
+a skipped step: the base document's step 3 exists to specify the action
+executors behind relationship 2, and this design has no relationship 2 to
+specify, because every stage terminates with reasoning-only output rather
+than an action on the world.
+
+### What this implies for step 4 and step 5
+
+- **Step 4** will not need to design retry or idempotency behavior for any
+  capability failure, since there are none. Its termination logic instead
+  concerns only relationship 1 failures (a stage's reasoning-core call
+  producing no valid output) and relationship 4 rejections (a stage's
+  output failing validation) — not relationship 2 failures.
+- **Step 5** will find that whichever framework is chosen absorbs
+  relationship 2 by default, trivially, since no stage ever populates a
+  tool list. A framework mapping table entry for "capability dispatch" will
+  read "not applicable" rather than naming who owns it.
+
+### Open question carried into later steps
+
+- If a future release adds a capability to any stage (for example, the
+  deferred backlog items for domain context or delivery-tool integration in
+  `02-product-requirements.md`), step 3 will need to be revisited for that
+  stage specifically; nothing in this design assumes the "no capabilities"
+  finding is permanent, only that it holds for the requirements as
+  currently scoped.
 
 ## Step 4 — Control relationships
 
