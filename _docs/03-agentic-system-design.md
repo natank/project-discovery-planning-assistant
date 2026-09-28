@@ -225,12 +225,17 @@ planning, quality review — arrived at directly in CrewAI's vocabulary
 differences are worth naming: that design included a sixth, explicit
 quality-review stage, where this document treats structural and semantic
 validation as a control relationship (step 4) applied to each stage's
-output rather than a stage of its own; and it did not surface the
-idea-owner pause between clarification and framing as an explicit step,
-consistent with finding 1 of this step's review. Both differences are
-revisited once step 4 is complete, since either could change once
-validation and human-interface design are worked through explicitly rather
-than assumed.
+output rather than a stage of its own; and it placed the idea-owner pause
+between clarification and framing at a CLI command boundary (`pdpa clarify`
+→ `pdpa generate`), outside the crew, then ran clarification assessment a
+second time as the first task *inside* the crew. The pause existed, but
+repeating clarification inside the generation pipeline blurred the line
+between the clarification stage and the human pause that follows it. This
+document instead runs S1 once and shows the pause as its own step (see
+finding 1 of the [step 1 review](./reviews/03-step1-review.md)). Both
+differences are revisited once step 4 is complete, since either could
+change once validation and human-interface design are worked through
+explicitly rather than assumed.
 
 ### Open questions carried into later steps
 
@@ -239,7 +244,11 @@ than assumed.
   ever runs once, at the start — this is a termination/control question for
   step 4, not a sequencing question, since the requirements do not
   currently describe generation-time re-clarification as a first-class
-  path (FR-03 describes the *initial* bounded question set).
+  path (FR-03 describes the *initial* bounded question set). The removed
+  technical design took a position on this: it bounded the first question
+  set and allowed "a later generation [to] surface additional open
+  questions only when they materially affect scope, risk, or acceptance
+  criteria." That policy is a candidate answer to evaluate in step 4.
 - Whether S4's bundling (requirements + stories + acceptance criteria in
   one stage) remains viable once step 2 defines the reasoning-core
   configuration for it, or whether the combined responsibility is too large
