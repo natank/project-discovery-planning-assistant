@@ -235,7 +235,97 @@ step 4.
 
 ## Step 2 — Reasoning-core configurations
 
-_Pending._
+Each stage from step 1 needs a reasoning-core configuration: a role,
+instructions, allowed tools, and output shape. This step asks what each
+stage's configuration must be, independent of any framework's `Agent`
+class.
+
+### Configurations
+
+| Configuration | Role | Instructions | Allowed tools | Output shape |
+|---|---|---|---|---|
+| Clarification analyst | Identifies material ambiguity, contradiction, and missing context in an idea owner's raw input, and detects input that falls outside the product's boundary entirely. | Must: read only the supplied input; raise a question only when the answer would materially change discovery or scope; state why each question matters; bound the question set rather than exhaustively enumerating every gap; explicitly return zero questions when input is sufficient. Must never: invent a target user, outcome, or constraint not stated or answered; treat a blank optional field as a problem requiring a question, since FR-01 allows it to remain unknown; ask about something only relevant to a later stage. | None | A bounded list of questions, each with the question text and why it matters, or an explicit no-questions-needed result; a distinct out-of-boundary result when the input is not a software idea at all (FR-15) |
+| Discovery framer | Frames the problem, target users, needs, outcomes, and constraints from the idea owner's context. | Must: use only the idea owner's input plus S1's recorded answers, skips, and deferrals; label every material claim as provided, inferred, assumption, or open question; carry forward a skipped or deferred question as an open question rather than silently dropping it. Must never: present an inference or assumption as a verified fact; resolve an open question on its own initiative; introduce a target user, stakeholder, or constraint the idea owner did not state or the analyst did not ask about. | None | A discovery summary: problem statement, target users, stakeholders, needs, outcomes, constraints, each material claim certainty-labeled |
+| Scope strategist | Proposes a focused MVP boundary and the risks that boundary creates. | Must: derive the boundary from the discovery summary alone; state the trade-off or constraint behind each inclusion and exclusion; identify follow-on opportunities separately from the MVP; give every risk an impact, a certainty label, and a suggested validation or mitigation activity. Must never: propose a capability the discovery summary gives no outcome or need for; omit a risk directly implied by an excluded capability or an open question in the discovery summary; claim a risk has been validated or mitigated rather than merely suggesting how it could be. | None | A scope proposal (included capabilities, non-goals, trade-offs, follow-ons) plus a list of risks, each certainty-labeled |
+| Requirements analyst | Derives testable requirements, user stories, and acceptance criteria from the MVP boundary the scope strategist proposed. | Must: derive every requirement only from a capability the scope strategist placed in `included_capabilities` (the MVP boundary itself, not the scope proposal's non-goals or follow-ons), or from a need/outcome in the discovery summary that an included capability serves; give each requirement a rationale traceable to that in-scope source; give each MVP story at least one linked requirement and observable acceptance criteria; keep requirements free of implementation detail. Must never: invent a requirement with no traceable source; derive a requirement from a capability listed in the scope proposal's non-goals or follow-ons, since neither is part of the MVP boundary FR-06 defines; produce a story without acceptance criteria; describe an acceptance criterion in terms of how the software is built rather than what it does. | None | Requirements (identifier, statement, target user/outcome, priority, rationale, dependencies, acceptance considerations), user stories (identifier, role, capability, value, priority, linked requirements), acceptance criteria per MVP story |
+| Delivery planner | Turns requirements and stories into a prioritized, dependency-aware delivery backlog. | Must: link every backlog item to at least one requirement or story; give every item a priority, a validation method, and its dependencies; separate MVP items from future work; carry forward any risk or open question from earlier stages that could block an item; identify a reasonable starting item. Must never: introduce a backlog item with no linked requirement or story; state a dependency that contradicts the proposed delivery order; drop a risk or open question that materially affects an item's readiness. | None | A backlog: item, outcome, linked story/requirement, priority, dependencies, validation method, unresolved blockers |
+
+### Allocation
+
+Each stage gets its own configuration. No two stages share one, even though
+every configuration currently has the same "None" tools column — reuse is
+judged on role and instructions, not on tool overlap, and each stage here
+asks for a genuinely different expertise (assessing ambiguity is not the
+same skill as proposing a scope boundary, which is not the same skill as
+writing acceptance criteria). Collapsing any two into one configuration
+would mean asking a single role to hold two distinct sets of "must never"
+instructions at once, which is exactly the risk the base document's
+least-capability rule warns against, applied here to role clarity rather
+than to tool access.
+
+```
+  Stages                                    Configurations
+  +----------------------------+
+  | S1 Assess clarification    |----------> [ Clarification analyst ]
+  | needs                      |
+  +----------------------------+
+  | S2 Frame the problem       |----------> [ Discovery framer      ]
+  +----------------------------+
+  | S3 Propose scope and risks |----------> [ Scope strategist      ]
+  +----------------------------+
+  | S4 Specify requirements/   |----------> [ Requirements analyst  ]
+  | stories/acceptance criteria|
+  +----------------------------+
+  | S5 Plan delivery           |----------> [ Delivery planner      ]
+  +----------------------------+
+```
+
+### Coverage and least-capability check
+
+- **Least capability:** every configuration's allowed-tools column is
+  "None" — this restates step 1's finding that no stage needs a capability
+  beyond reasoning over supplied context, now confirmed at the
+  configuration level rather than the stage level. There is nothing to
+  over-grant.
+- **Coverage:** since no stage needs a tool, coverage in the sense of "does
+  every capability a stage needs appear on its configuration" is trivially
+  satisfied. The real coverage question at this step is instructional, not
+  tool-based: does each configuration's instructions actually cover what
+  its stage's responsibility (step 1) and inputs require it to do. The
+  "Must" column above is written to enumerate exactly the responsibility
+  from step 1's stage table, and the "Must never" column is written to
+  enumerate the non-goals and certainty-labeling requirements (FR-05,
+  the product's non-goals section) that apply to every stage rather than
+  restating them once and hoping each configuration inherits them.
+- **MVP boundary ownership:** the scope strategist (S3) is the only
+  configuration that decides what is in the MVP — its output separates
+  `included_capabilities` from `non_goals` and `follow_ons` precisely so
+  that decision is explicit and checkable. An earlier draft of the
+  requirements analyst's instructions said to derive requirements from any
+  "capability, outcome, or risk named in the discovery summary or scope
+  proposal," which is broader than intended: the scope proposal also
+  contains non-goals and follow-ons, and both are capabilities the scope
+  strategist explicitly excluded from the MVP. A requirement traced to
+  either would still pass a naive reading of "traceable to the scope
+  proposal." The requirements analyst's instructions now name
+  `included_capabilities` specifically, and its must-never list states the
+  failure this closes: deriving a requirement from a non-goal or follow-on
+  contradicts FR-06's "each MVP requirement" framing, since neither is part
+  of the MVP.
+
+### Open questions carried into later steps
+
+- Whether the requirements analyst's combined responsibility (requirements,
+  stories, and acceptance criteria in one call) is reliably held by one set
+  of instructions once real output is produced against it, or whether it
+  needs splitting after all — this was flagged in step 1 as an open
+  question and remains open here, since step 2 alone cannot resolve it;
+  only observing real output can.
+- Whether the discovery framer's instruction to "carry forward a skipped or
+  deferred question as an open question" needs a more precise output-shape
+  rule (e.g., a required field rather than a prose mention) to make FR-03's
+  "deferred questions remain visible" requirement checkable by validation
+  in step 4, rather than merely instructed here.
 
 ## Step 3 — Capability contracts
 
