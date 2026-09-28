@@ -30,6 +30,10 @@ responsibility.
 Reviews of each step are kept in [`reviews/`](./reviews/), starting with
 the [step 1 review](./reviews/03-step1-review.md).
 
+Proposed changes to already-frozen (merged) steps are recorded as
+engineering change proposals in [`ecp/`](./ecp/), starting with
+[ECP-001](./ecp/ECP-001-s1-clarification-as-tool.md).
+
 ## Introduction
 
 This document derives the system design from
