@@ -1047,8 +1047,48 @@ A stage without a validation box passes its output forward on trust. That
 is sometimes acceptable, but it should be a recorded decision, not an
 omission.
 
-**Output of step 4:** a control table per stage, and the system-level
-termination rule (when is the whole run done, failed, or exhausted).
+**Outer-loop concerns.** The per-stage table and the stage envelope above
+describe what happens *inside* one stage's boundary — its own inner control
+loop, its own memory read/write, its own validation and termination (see
+the Glossary's "Stage" entry: a stage owns these, but not the outer control
+loop that sequences it against other stages). Two things follow from that
+scope, and both are commonly missed for the same reason: they look like
+they belong to a stage, because they sit right next to one, but they are
+really the responsibility of the orchestrator invoking stages, not of any
+single stage's envelope.
+
+- **What happens between stages is not a property of either stage.** The
+  human-interface row in the table above covers a stage *escalating* to a
+  human out of its own validation failure — an exception path, reached from
+  inside that stage's envelope. It does not cover a human-interface step
+  that is a normal, expected part of the sequence between two stages (for
+  example, a person answering a question one stage produced, before the
+  next stage may run). That is not an exception path out of either stage's
+  envelope; it is the outer control loop invoking the human-interface
+  component as its own step, the same way it invokes each stage. If a
+  design has this kind of pause, record it explicitly, separate from the
+  per-stage table, naming which two stages it sits between and what the
+  outer loop is waiting on before it invokes the next one.
+- **Getting the first input into memory is not a property of the first
+  stage.** Before any stage can read anything from memory, something has to
+  put the initial input there. That write is not part of the first stage's
+  own memory row (a stage's memory row describes what it reads and writes
+  *given that memory already holds something to read*) — it is the outer
+  control loop's responsibility, performed once, before it invokes the
+  first stage at all. Record where a design's initial input enters memory
+  and who is responsible for writing it, separate from the per-stage table,
+  even when — especially when — that entry point is not itself a stage.
+
+Neither of these is a sixth relationship or an eighth component; both are
+ordinary work of the outer control loop, the same component that invokes
+every stage and enforces run-level termination. They are named separately
+here only because the per-stage table cannot represent them without
+misattributing them to a stage.
+
+**Output of step 4:** a control table per stage, an outer-loop section
+covering initial-input entry and any between-stage human-interface steps,
+and the system-level termination rule (when is the whole run done, failed,
+or exhausted).
 
 ### Step 5 — Framework mapping
 
@@ -1100,6 +1140,12 @@ Use this to review a finished design before detailed design begins.
       safety, and approval.
 - [ ] Every stage has an explicit decision on memory, validation,
       termination, and human involvement, even if the decision is "none."
+- [ ] Something is named as responsible for writing the initial input into
+      memory, before the first stage runs — not attributed to the first
+      stage's own memory row.
+- [ ] Every human-interface step that sits between two stages, rather than
+      escalating out of one stage's own validation, is recorded as an
+      outer-loop step naming which two stages it sits between.
 - [ ] The whole run has a defined success, failure, and exhausted outcome.
 - [ ] The framework mapping names every relationship the application must
       implement itself.
