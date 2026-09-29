@@ -1,6 +1,7 @@
 # ECP-001: Move clarification question-asking into S1 as an action executor
 
-**Status:** Proposed
+**Status:** Accepted (2026-09-29) — design changes to be implemented as a
+follow-up; Steps 1–4 are unmodified as of this acceptance.
 **Author:** Design session, 2026-09-28
 **Affects:** [`03-agentic-system-design.md`](../03-agentic-system-design.md) —
 Step 1 (Stages and sequence), Step 2 (Reasoning-core configurations),
@@ -149,7 +150,9 @@ before generation moves on to S2.
 
 ## Disposition
 
-Pending committee review. If accepted, Steps 1–4 (all currently frozen)
-will be reopened for targeted revision, not a full redo, and each revision
-will go through review before being merged, consistent with how each step
-was originally reviewed and merged.
+**Accepted on 2026-09-29.** Steps 1–4 (all currently frozen) will be
+reopened for targeted revision, not a full redo, as separate follow-up
+work. Each revision will go through review before being merged, consistent
+with how each step was originally reviewed and merged. Acceptance of this
+proposal does not itself change the design doc; implementation is tracked
+as follow-up work against Steps 1–4.
