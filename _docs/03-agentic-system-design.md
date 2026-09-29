@@ -99,20 +99,24 @@ and one output:
 
 | Stage | Responsibility | Inputs | Output | Capabilities needed | FRs |
 |---|---|---|---|---|---|
-| S1: Assess clarification needs | Identify ambiguity, contradiction, or missing context material enough to affect discovery or scope, including input that falls outside the product boundary entirely (FR-15); produce a bounded set of prioritized questions, or explicitly none. | The idea owner's raw input (idea, target user, outcome, constraints — any of which may be blank) | A bounded list of clarification questions (each with a reason it matters), or an explicit no-questions-needed result | None — reasons only from supplied input; no external lookup | FR-02, FR-03, FR-15 |
-| S2: Frame the problem | Produce a coherent discovery summary: problem statement, target users, stakeholders, needs, outcomes, constraints — every claim labeled provided / inferred / assumption / open question. | The idea owner's original raw input (unchanged since before S1 ran), plus the idea owner's answers, skips, or deferrals collected after S1 completes | A `DiscoverySummary`-shaped artifact with certainty labels on every material claim | None | FR-04, FR-05 |
+| S1: Assess clarification needs | Identify ambiguity, contradiction, or missing context material enough to affect discovery or scope, including input that falls outside the product boundary entirely (FR-15); ask the idea owner its questions and resolve them into answers, skips, or deferrals before producing output ([ECP-001](./ecp/ECP-001-s1-clarification-as-tool.md)). | The idea owner's raw input (idea, target user, outcome, constraints — any of which may be blank) | A resolved clarification result: the question list, each paired with its answer, skip, or deferral; or an explicit no-questions-needed result | One: an ask/collect-answers tool (ECP-001) — the only capability in this design; see step 3 | FR-02, FR-03, FR-15 |
+| S2: Frame the problem | Produce a coherent discovery summary: problem statement, target users, stakeholders, needs, outcomes, constraints — every claim labeled provided / inferred / assumption / open question. | The idea owner's raw input, plus S1's resolved clarification result (questions paired with answers, skips, or deferrals) — both now part of S1's single output (ECP-001) | A `DiscoverySummary`-shaped artifact with certainty labels on every material claim | None | FR-04, FR-05 |
 | S3: Propose scope and risks | Propose a focused MVP boundary (included capabilities, non-goals, trade-offs, follow-ons) and the material risks that boundary creates, each carrying its own certainty label. | The discovery summary from S2 | A scope proposal plus a list of risks (each with impact, certainty, and a suggested validation/mitigation) | None | FR-05, FR-06, FR-07 |
 | S4: Specify requirements, stories, and acceptance criteria | Derive testable, prioritized, certainty-labeled requirements from the scope, express them as user stories, and give each MVP story observable acceptance criteria — as one coherent, internally-consistent set. | Discovery summary, scope, and risks from S2/S3 | Requirements, user stories (linked to requirements), and acceptance criteria (linked to stories) | None | FR-05, FR-08, FR-09, FR-10 |
 | S5: Plan delivery | Turn requirements and stories into a prioritized, dependency-aware backlog with a validation method per item, MVP work separated from future work, unresolved blocking risks/questions carried onto each affected item, and a reasonable starting point identified. | Requirements and stories from S4; risks and follow-ons from S3; open questions from S2 | A backlog: item, outcome, linked story/requirement, priority, dependencies, validation method, unresolved blockers | None | FR-11 |
 
-None of the five stages requires a capability beyond reasoning over
+Four of the five stages require no capability beyond reasoning over
 supplied context — this follows directly from the non-goals in
 `02-product-requirements.md` ("does not... execute irreversible actions in
-external systems," no market research, no external validation). Step 3 of
-this design will confirm whether this holds once tool needs are considered
-more deliberately, but nothing in the requirements currently implies a
-stage needs to look anything up, write anywhere, or call an external
-service.
+external systems," no market research, no external validation). S1 is the
+one exception, per ECP-001: it needs an ask/collect-answers capability to
+resolve its own questions before producing output. This does not conflict
+with the non-goals above — asking the idea owner a question and waiting for
+their answer is not an external system integration, market research, or an
+irreversible action; it is the same human-interface interaction this design
+always required, now performed as a tool call within S1 rather than as a
+step the outer loop performs between S1 and S2. Step 3 specifies this
+capability's contract in full.
 
 **Why S3 bundles scope and risk into one stage rather than two:** this
 appears to fail the base document's "and" heuristic ("if describing a
@@ -155,13 +159,17 @@ the main constraint step 4's memory design has to satisfy: whatever carries
 state between stages must make every earlier stage's output available to
 every later stage that needs it, not just to its immediate successor.
 
-The sequence also contains one guaranteed pause that is not itself a
-stage: after S1 produces its questions, the run stops and waits for the
-idea owner to answer, skip, or defer each one (FR-03) before S2 can run.
-This is a human-interface point, not a reasoning stage — S1's job is
-producing the questions, not conducting the wait — so it is shown in the
-diagram as a distinct step whose mechanics (how the wait is implemented,
-what happens if the idea owner never responds) are deferred to step 4,
+Per ECP-001, the idea owner's answer/skip/deferral pause happens *inside*
+S1's own inner loop (S1 calls its ask/collect-answers tool, waits, and
+incorporates the result before producing its final output), not as a
+separate step the outer loop performs between S1 and S2. S1 therefore
+takes longer, in wall-clock terms, than the other stages — its inner loop
+includes an unbounded wait on a human response — but it remains one stage
+invocation from the outer loop's perspective: the outer loop invokes S1
+once and receives one resolved result back, the same way it invokes every
+other stage. The mechanics of the wait (what happens if the idea owner
+never responds, how S1's own termination accounts for an unbounded wait
+inside an otherwise-bounded reasoning loop) are deferred to step 4,
 consistent with how every other human-interface and termination concern in
 this document is deferred.
 
@@ -169,13 +177,14 @@ this document is deferred.
   Idea owner input
         |
         v
-  +----------------------+
-  | S1 Assess             |
-  | clarification needs   |
-  +----------------------+
-        |
-        v
-  [ Idea owner answers, skips, or defers each question ]   (human interface; mechanics in step 4)
+  +--------------------------+
+  | S1 Assess clarification   |
+  | needs (asks its own       |
+  | questions and resolves    |
+  | them via a tool call,     |
+  | per ECP-001, before       |
+  | producing output)         |
+  +--------------------------+
         |
         v
   +----------------------+
@@ -215,12 +224,19 @@ step 4.
 
 ### Open questions carried into later steps
 
-- Whether S1 (clarification) should be able to run again mid-sequence
-  (e.g., if S3 or S4 discovers new material ambiguity) or whether it only
-  ever runs once, at the start — this is a termination/control question for
-  step 4, not a sequencing question, since the requirements do not
-  currently describe generation-time re-clarification as a first-class
-  path (FR-03 describes the *initial* bounded question set).
+- Whether S1 (clarification), as a single outer-loop invocation, should be
+  re-invoked again mid-sequence (e.g., if S3 or S4 discovers new material
+  ambiguity) or whether it only ever runs once, at the start — this is a
+  termination/control question for step 4, not a sequencing question, since
+  the requirements do not currently describe generation-time
+  re-clarification as a first-class path (FR-03 describes the *initial*
+  bounded question set). ECP-001 does not change this: S1 is still invoked
+  once by the outer loop; what changed is that S1's own inner loop now
+  includes the ask/answer exchange and, potentially, the reasoning core
+  reacting to answers before producing its final output, all within that
+  one invocation. Multiple turns inside S1's inner loop are not the same
+  as the outer loop re-invoking S1, and step 4 states this distinction
+  explicitly rather than leaving it implicit.
 - Whether S4's bundling (requirements + stories + acceptance criteria in
   one stage) remains viable once step 2 defines the reasoning-core
   configuration for it, or whether the combined responsibility is too large
@@ -248,7 +264,7 @@ class.
 
 | Configuration | Role | Instructions | Allowed tools | Output shape |
 |---|---|---|---|---|
-| Clarification analyst | Identifies material ambiguity, contradiction, and missing context in an idea owner's raw input, and detects input that falls outside the product's boundary entirely. | Must: read only the supplied input; raise a question only when the answer would materially change discovery or scope; state why each question matters; bound the question set rather than exhaustively enumerating every gap; explicitly return zero questions when input is sufficient. Must never: invent a target user, outcome, or constraint not stated or answered; treat a blank optional field as a problem requiring a question, since FR-01 allows it to remain unknown; ask about something only relevant to a later stage. | None | A bounded list of questions, each with the question text and why it matters, or an explicit no-questions-needed result; a distinct out-of-boundary result when the input is not a software idea at all (FR-15) |
+| Clarification analyst | Identifies material ambiguity, contradiction, and missing context in an idea owner's raw input; detects input that falls outside the product's boundary entirely; asks its questions and resolves them into answers, skips, or deferrals before producing output (ECP-001). | Must: read only the supplied input; raise a question only when the answer would materially change discovery or scope; state why each question matters; bound the question set rather than exhaustively enumerating every gap; explicitly return zero questions (and skip the tool call entirely) when input is sufficient; when questions exist, call the ask/collect-answers tool once with the full bounded question set, not once per question; accept a skip or deferral as a final resolution for that question rather than re-asking it. Must never: invent a target user, outcome, or constraint not stated or answered; treat a blank optional field as a problem requiring a question, since FR-01 allows it to remain unknown; ask about something only relevant to a later stage; fabricate an answer to a question the idea owner skipped or deferred; re-ask a question the idea owner already explicitly deferred, within the same invocation. | One: the ask/collect-answers tool (ECP-001; contract in step 3) | A resolved clarification result: each question paired with its answer, skip, or deferral, or an explicit no-questions-needed result; a distinct out-of-boundary result when the input is not a software idea at all (FR-15), which skips the tool call entirely |
 | Discovery framer | Frames the problem, target users, needs, outcomes, and constraints from the idea owner's context. | Must: use only the idea owner's input plus S1's recorded answers, skips, and deferrals; label every material claim as provided, inferred, assumption, or open question; carry forward a skipped or deferred question as an open question rather than silently dropping it. Must never: present an inference or assumption as a verified fact; resolve an open question on its own initiative; introduce a target user, stakeholder, or constraint the idea owner did not state or the analyst did not ask about. | None | A discovery summary: problem statement, target users, stakeholders, needs, outcomes, constraints, each material claim certainty-labeled |
 | Scope strategist | Proposes a focused MVP boundary and the risks that boundary creates. | Must: derive the boundary from the discovery summary alone; state the trade-off or constraint behind each inclusion and exclusion; identify follow-on opportunities separately from the MVP; give every risk an impact, a certainty label, and a suggested validation or mitigation activity. Must never: propose a capability the discovery summary gives no outcome or need for; omit a risk directly implied by an excluded capability or an open question in the discovery summary; claim a risk has been validated or mitigated rather than merely suggesting how it could be. | None | A scope proposal (included capabilities, non-goals, trade-offs, follow-ons) plus a list of risks, each certainty-labeled |
 | Requirements analyst | Derives testable requirements, user stories, and acceptance criteria from the MVP boundary the scope strategist proposed. | Must: derive every requirement only from a capability the scope strategist placed in `included_capabilities` (the MVP boundary itself, not the scope proposal's non-goals or follow-ons), or from a need/outcome in the discovery summary that an included capability serves; give each requirement a rationale traceable to that in-scope source; give each MVP story at least one linked requirement and observable acceptance criteria; keep requirements free of implementation detail. Must never: invent a requirement with no traceable source; derive a requirement from a capability listed in the scope proposal's non-goals or follow-ons, since neither is part of the MVP boundary FR-06 defines; produce a story without acceptance criteria; describe an acceptance criterion in terms of how the software is built rather than what it does. | None | Requirements (identifier, statement, target user/outcome, priority, rationale, dependencies, acceptance considerations), user stories (identifier, role, capability, value, priority, linked requirements), acceptance criteria per MVP story |
@@ -286,21 +302,27 @@ than to tool access.
 
 ### Coverage and least-capability check
 
-- **Least capability:** every configuration's allowed-tools column is
-  "None" — this restates step 1's finding that no stage needs a capability
-  beyond reasoning over supplied context, now confirmed at the
-  configuration level rather than the stage level. There is nothing to
-  over-grant.
-- **Coverage:** since no stage needs a tool, coverage in the sense of "does
-  every capability a stage needs appear on its configuration" is trivially
-  satisfied. The real coverage question at this step is instructional, not
-  tool-based: does each configuration's instructions actually cover what
-  its stage's responsibility (step 1) and inputs require it to do. The
-  "Must" column above is written to enumerate exactly the responsibility
-  from step 1's stage table, and the "Must never" column is written to
-  enumerate the non-goals and certainty-labeling requirements (FR-05,
-  the product's non-goals section) that apply to every stage rather than
-  restating them once and hoping each configuration inherits them.
+- **Least capability:** four of the five configurations' allowed-tools
+  columns are "None," restating step 1's finding that those stages need no
+  capability beyond reasoning over supplied context, confirmed at the
+  configuration level. The clarification analyst is the one exception
+  (ECP-001): it has exactly one tool, the ask/collect-answers capability,
+  and nothing more — least capability is satisfied by granting only the
+  one tool the stage's responsibility actually requires, not by every
+  configuration having none.
+- **Coverage:** for the four tool-less configurations, coverage in the
+  sense of "does every capability a stage needs appear on its
+  configuration" is trivially satisfied. For the clarification analyst,
+  coverage means the one tool it needs (ask/collect-answers) is present,
+  which it is. The broader coverage question at this step remains
+  instructional as well as tool-based: does each configuration's
+  instructions actually cover what its stage's responsibility (step 1) and
+  inputs require it to do. The "Must" column above is written to enumerate
+  exactly the responsibility from step 1's stage table, and the "Must
+  never" column is written to enumerate the non-goals and
+  certainty-labeling requirements (FR-05, the product's non-goals section)
+  that apply to every stage rather than restating them once and hoping
+  each configuration inherits them.
 - **MVP boundary ownership:** the scope strategist (S3) is the only
   configuration that decides what is in the MVP — its output separates
   `included_capabilities` from `non_goals` and `follow_ons` precisely so
@@ -330,17 +352,28 @@ than to tool access.
   rule (e.g., a required field rather than a prose mention) to make FR-03's
   "deferred questions remain visible" requirement checkable by validation
   in step 4, rather than merely instructed here.
+- (ECP-001) Whether the clarification analyst should call the
+  ask/collect-answers tool exactly once with its full bounded question set,
+  or iteratively (asking, reading an answer, potentially asking a follow-up
+  before finalizing) — the "Must" column above requires a single batched
+  call as the default, since nothing in the product requirements describes
+  iterative clarification, but this is worth confirming once step 3
+  specifies the tool's actual contract and step 4 works out the
+  termination implications of each option.
 
 ## Step 3 — Capability contracts
 
-Step 1 and step 2 each concluded, independently, that none of the five
-stages needs a capability beyond reasoning over supplied context. That
-conclusion is re-checked here directly against the requirements, rather
-than simply carried forward, since a design step that only restates an
-earlier step's output without re-examining it against the source is exactly
-how the step 2 review's MVP-boundary gap slipped through — the earlier
-draft trusted "traceable to the scope proposal" without checking what the
-scope proposal actually contained.
+**Revised by [ECP-001](./ecp/ECP-001-s1-clarification-as-tool.md).** This
+step originally concluded that no stage needs any capability, on the
+reasoning that FR-15's "ask for clarification" is S1's ordinary output, not
+a mid-task tool call. ECP-001 revisits that specific reasoning and reaches
+the opposite conclusion for S1: asking the idea owner its questions and
+collecting answers, skips, and deferrals is now modeled as a tool call
+inside S1's own inner loop, for the reuse and re-checking reasons in
+ECP-001's motivation. This step now specifies that one capability's
+contract in full, and explicitly retracts the two downstream notes the
+original "no capabilities" conclusion produced for step 4 and step 5 (see
+"What this implies," below).
 
 ### Re-checking against the requirements
 
@@ -350,61 +383,72 @@ stage needs to look up, compute, write, or ask beyond what step 1 and step
 
 - The **non-goals** section rules out market validation, replacing domain
   expertise, external system integration, and multi-project/workspace
-  management — none of which any of the five stages would need a
-  capability for even if they were in scope.
+  management. None of the five stages needs a capability for any of these
+  even if they were in scope, and the one capability this step does define
+  (below) is none of them: asking the idea owner a question they already
+  expect to answer, within the product's own workflow, is not market
+  research, not a replacement for domain expertise, and not an external
+  system integration.
 - **NFR-02** ("must not take irreversible external actions") and the
   architecture-level non-goal against external search, retrieval, or
   research integrations both rule out a stage having a write or lookup
-  capability by design, not merely by omission — this is a constraint the
-  product actively enforces, not an area the requirements are simply silent
-  on.
+  capability — this constraint is unaffected by ECP-001, since
+  ask/collect-answers is neither a write nor a lookup against any external
+  system; it is an interaction with the idea owner, the same person every
+  other human-interface point in this design already involves.
 - **FR-15** ("It shall either ask for clarification or produce a visibly
-  qualified partial package") could be misread as implying an "ask"
-  capability in the sense the base document lists (relationship 2, a tool
-  the reasoning core calls mid-task). It does not: FR-15's "ask for
-  clarification" is exactly what S1 already does as its entire
-  responsibility — producing a bounded list of clarification questions,
-  which is S1's ordinary output, not an interruption S1 makes mid-task via
-  a tool call. No stage in this design produces output, then pauses,
-  then asks a follow-up question through a capability; the one guaranteed
-  pause in the whole system is the human-interface point after S1
-  completes (step 1's sequence), not a tool any stage invokes.
+  qualified partial package") is the requirement this step's original
+  reasoning leaned on to rule out an "ask" capability. Re-read under
+  ECP-001: FR-15's "ask for clarification" is still S1's responsibility,
+  but *how* S1 asks is now a tool call rather than S1 simply returning a
+  question list as its terminal output. This does not stretch FR-15 beyond
+  what it requires — the product still asks for clarification and still
+  proceeds with a qualified partial package when clarification cannot
+  resolve everything (a skip or deferral, captured in S1's resolved
+  output, is exactly that qualification).
 
 Nothing else in the functional requirements, non-functional requirements,
-or backlog implies a stage-level capability. The conclusion from steps 1
-and 2 holds.
+or backlog implies a capability for any of the other four stages. The
+"no capability" conclusion holds for S2 through S5.
 
-### Capability contracts
+### Capability contract: ask/collect-answers
 
-There are no capability contracts to specify. No stage's configuration
-(step 2) lists an allowed tool, so there is no business logic, argument
-schema, failure mode, retry policy, or approval requirement to define at
-this step. This is a legitimate, checked outcome of the design process, not
-a skipped step: the base document's step 3 exists to specify the action
-executors behind relationship 2, and this design has no relationship 2 to
-specify, because every stage terminates with reasoning-only output rather
-than an action on the world.
+| Field | Specification |
+|---|---|
+| Name and purpose | `ask_clarifying_questions` — presents a bounded set of clarification questions to the idea owner and returns their answer, skip, or deferral for each. |
+| Arguments | The bounded question list produced by the clarification analyst's own reasoning: for each question, its text and why it matters (matching S1's existing per-question schema from step 1/step 2, unchanged by this proposal). |
+| Result | For each question in the argument list: one of an answer (free text), an explicit skip, or an explicit deferral. The result is keyed to the same questions passed in — no question may be silently dropped from the result. |
+| Side effects | None on external systems. The only effect is surfacing questions to, and recording responses from, the idea owner — the same person, and the same kind of interaction, every other human-interface point in this design already involves (FR-03). Not idempotent in the way a pure lookup would be: calling it twice with the same questions could reasonably prompt the idea owner twice, but this is a UX concern, not a data-consistency one, since no state outside S1's own working memory for this invocation is written. |
+| Failure modes | The idea owner does not respond (see Step 4's termination revision, below, for how this is distinguished from a reasoning-core failure); the idea owner's response cannot be parsed into answer/skip/deferral for a given question (treated as a validation-content failure on S1's own output, per Step 4). |
+| Retry safety | Safe to call again with the same question list if the prior call failed to reach the idea owner (e.g., a delivery failure in whatever interface presents the questions) — re-presenting unanswered questions is not harmful. Not safe to call with a *different* question list after a partial response, since that would present the idea owner with an inconsistent set; the clarification analyst's instructions (step 2) require calling it once, with the full bounded set, precisely to avoid this. |
+| Approval needed | No — this capability *is* the human-interface interaction FR-03 requires, not an action that itself needs a separate approval gate. |
 
 ### What this implies for step 4 and step 5
 
-- **Step 4** will not need to design retry or idempotency behavior for any
-  capability failure, since there are none. Its termination logic instead
-  concerns only relationship 1 failures (a stage's reasoning-core call
-  producing no valid output) and relationship 4 rejections (a stage's
-  output failing validation) — not relationship 2 failures.
-- **Step 5** will find that whichever framework is chosen absorbs
-  relationship 2 by default, trivially, since no stage ever populates a
-  tool list. A framework mapping table entry for "capability dispatch" will
-  read "not applicable" rather than naming who owns it.
+Both of step 3's original downstream notes are retracted:
+
+- **Step 4 does need termination and retry design for a capability
+  failure**, specifically S1's ask/collect-answers call. Step 4's revision
+  (below) works this out: S1's termination has to distinguish the
+  reasoning-core call failing (fast, bounded, provider-side — the existing
+  retry-cap logic still applies) from the tool call's human-response wait
+  failing to resolve (unbounded, not provider-side, and not something a
+  retry cap should govern the same way).
+- **Step 5 will find that capability dispatch is applicable for S1's one
+  tool**, not "not applicable" as the original conclusion stated. The
+  framework mapping table (step 5) will need a real entry for relationship
+  2, at least for S1, rather than a blanket "not applicable."
 
 ### Open question carried into later steps
 
-- If a future release adds a capability to any stage (for example, the
-  deferred backlog items for domain context or delivery-tool integration in
-  `02-product-requirements.md`), step 3 will need to be revisited for that
-  stage specifically; nothing in this design assumes the "no capabilities"
-  finding is permanent, only that it holds for the requirements as
-  currently scoped.
+- If a future release adds a capability to any of S2 through S5 (for
+  example, the deferred backlog items for domain context or delivery-tool
+  integration in `02-product-requirements.md`), this step will need
+  revisiting for that stage specifically; nothing in this design assumes
+  the "no capability" finding for S2–S5 is permanent, only that it holds
+  for the requirements as currently scoped. This question predates
+  ECP-001 and is restated here, narrowed to the four stages ECP-001 did not
+  change.
 
 ## Step 4 — Control relationships
 
@@ -422,20 +466,34 @@ design rather than one stage's.
 **1. Can S1 re-run mid-sequence, or does it only ever run once, at the
 start?**
 
-S1 runs once, at the start. Nothing in `02-product-requirements.md`
-describes generation-time re-clarification as a first-class path; FR-03
-describes a single, initial, bounded question set. Introducing a second,
-implicit clarification pass triggered automatically by S3 or S4 finding
-new ambiguity would create exactly the kind of automatic loop-back step 1
-found no requirement forcing, and it would blur which stage owns detecting
-ambiguity (S1's entire responsibility) versus which stage owns proposing
-content (S3, S4). If a later stage's reasoning surfaces new material
-ambiguity, that is a validation finding on *that* stage's own output
-(recorded as an open question below, per-stage), not a re-invocation of
-S1. This also means S1 needs no iteration-count or loop-detection
-termination logic of its own beyond the single-call default every stage
-gets (see the per-stage tables below) — there is no inner loop across
-multiple S1 invocations to bound.
+The outer control loop invokes S1 once, at the start. Nothing in
+`02-product-requirements.md` describes generation-time re-clarification as
+a first-class path; FR-03 describes a single, initial, bounded question
+set. Introducing a second, implicit clarification pass triggered
+automatically by S3 or S4 finding new ambiguity would create exactly the
+kind of automatic loop-back step 1 found no requirement forcing, and it
+would blur which stage owns detecting ambiguity (S1's entire
+responsibility) versus which stage owns proposing content (S3, S4). If a
+later stage's reasoning surfaces new material ambiguity, that is a
+validation finding on *that* stage's own output (recorded as an open
+question below, per-stage), not a re-invocation of S1.
+
+**Revised by [ECP-001](./ecp/ECP-001-s1-clarification-as-tool.md):** "S1
+runs once" describes the outer loop's relationship to S1, not the number of
+reasoning-core calls inside S1's own inner loop. Per ECP-001, S1's inner
+loop now includes: producing candidate questions, calling the
+ask/collect-answers tool, receiving answers, and optionally re-checking or
+refining before producing its final resolved output — this is multiple
+turns of S1's *own* inner loop, bounded by S1's own single termination
+condition ("has S1 produced a resolved clarification result"), not the
+outer loop invoking S1 a second time. This is the same distinction the base
+document's Stage glossary entry draws between a stage's inner loop and the
+outer loop that sequences stages: S1's inner loop can legitimately contain
+several reasoning-core turns without S1 having been re-run in the sense
+this question asks about. S1's own iteration/retry logic (below) has to
+bound the inner loop's reasoning-core turns and treat the tool call's
+human-response wait as a separate, non-retry-capped concern — see S1's
+termination row below.
 
 **2. Does the "don't present downstream planning as final" caution, plus
 FR-13, imply idea-owner sign-off pauses between every stage, not only after
@@ -449,15 +507,18 @@ carried-forward uncertainty**, not by an approval gate at every stage
 boundary: S2's certainty labels, S3's risks, and S4/S5's traceable
 open-question carry-forward (FR-05, FR-12) already make unresolved
 ambiguity visible in the final package without stopping the pipeline to ask
-about it mid-run. The one pause that remains structurally necessary is
-after S1, because it is the only point where the pipeline cannot
-meaningfully proceed at all without idea-owner input — S2 through S5 each
-have a well-defined output even when upstream certainty is low (the
-certainty label itself *is* that output). Review of the *complete* draft
-package (FR-13, "review" command) remains a single pass at the end of
-generation, not a pause folded into the middle of it, and correction from
-that review is handled by the re-run mechanism resolved in question 3, not
-by additional mid-pipeline pauses.
+about it mid-run. The one pause that remains structurally necessary is the
+idea owner answering S1's questions — per ECP-001, now a tool call inside
+S1's own inner loop rather than a step between S1 and S2 — because it is
+the only point where the pipeline cannot meaningfully proceed at all
+without idea-owner input: S2 through S5 each have a well-defined output
+even when upstream certainty is low (the certainty label itself *is* that
+output), but S1 cannot produce its resolved clarification result at all
+without the idea owner's responses. Review of the *complete* draft package
+(FR-13, "review" command) remains a single pass at the end of generation,
+not a pause folded into the middle of it, and correction from that review
+is handled by the re-run mechanism resolved in question 3, not by
+additional mid-pipeline pauses.
 
 **3. Every stage must be re-runnable from earlier stages' saved outputs
 (FR-13 regeneration) — what does this require of memory?**
@@ -506,19 +567,21 @@ its own.
 
 | Stage | Memory | Validation | Termination | Human interface |
 |---|---|---|---|---|
-| S1: Assess clarification needs | In: the idea owner's raw input, written to memory by the outer control loop before S1 is invoked (see "Outer-loop concerns" below — this is not S1's own action). Out: the question list (or no-questions/out-of-boundary result), persisted for the outer loop and for S2 to read. No cross-run role beyond this — S1 does not need prior-run history, since it only ever runs once per project. | Shape: output matches the clarification-question schema (question, reason, priority) or one of the two explicit alternative results. Content: each question's stated reason must reference something present in the raw input (a check against fabricated rationale) — reject and retry within this stage's own call if a question has no traceable reason. | Success: a valid question list (zero or more) or a valid out-of-boundary result. Failure: the reasoning-core call produces no parseable output after retry. Exhausted: not applicable at the per-call level (single call, per question 1 above) but applicable at the project level if S1 cannot produce valid output after a small, fixed number of attempts (e.g., 2) — treated as a configuration/provider failure, not a content problem. | None required to run S1 itself. The pause where the idea owner answers, skips, or defers each question happens after S1 completes and is not part of S1's own envelope — see "Outer-loop concerns" below. |
-| S2: Frame the problem | In: two inputs of different provenance, both read from memory by the outer control loop when it invokes S2 — the idea owner's original raw input (written before S1 ran) and the answers/skips/deferrals collected during the pause after S1 (see "Outer-loop concerns" below). Out: the discovery summary, including the structured open-questions field from question 4 above, persisted so S3 (and a later regeneration) can read it without re-running S1 or S2. | Shape: output matches the `DiscoverySummary` schema, and every material claim carries one of the four certainty labels (FR-05) — reject if any required claim is unlabeled. Content: every question skipped or deferred in S1 must appear in S2's structured open-questions field (the check that resolves question 4) — reject and retry if any is missing. | Success: a certainty-labeled, schema-valid summary with no missing carried-forward question. Failure: schema-invalid output, or a missing carried-forward question, after retry. Exhausted: a small fixed retry cap (consistent with S1), beyond which this is a provider/configuration failure rather than a content one. | None. S2 does not pause for approval; its output's certainty labels are what make its uncertainty visible downstream (per question 2), not a gate that stops the pipeline. |
+| S1: Assess clarification needs | In: the idea owner's raw input, written to memory by the outer control loop before S1 is invoked (see "Outer-loop concerns" below — this is not S1's own action). Out: the resolved clarification result (questions paired with answers/skips/deferrals, or a no-questions/out-of-boundary result), persisted for the outer loop and for S2 to read. No cross-run role beyond this — S1 does not need prior-run history, since it is invoked once per project by the outer loop. | Shape: output matches the resolved-clarification schema (each question paired with its resolution) or one of the two explicit alternative results. Content: each question's stated reason must reference something present in the raw input (a check against fabricated rationale); every question sent to the ask/collect-answers tool must appear in the result with a resolution — reject and retry within this stage's own inner loop if a question is missing its resolution or a resolution was fabricated rather than returned by the tool. | **Revised by ECP-001** — S1's inner loop now has two distinct failure modes, and its termination logic must not conflate them (this was the precondition ECP-001 named for acceptance): (a) *reasoning-core failure* — the call that drafts candidate questions, or the call that produces S1's final resolved output after receiving answers, produces no parseable result. Success/failure/exhausted for this mode are unchanged from before ECP-001: a small, fixed retry cap (e.g., 2 attempts), exhaustion treated as a configuration/provider failure. (b) *Tool-call wait not resolving* — the ask/collect-answers tool call is made, but the idea owner's response cannot be obtained or parsed. This is not bounded by the reasoning-core retry cap: the wait itself has no fixed attempt count, since a human has not failed to respond after N tries in the way a flaky provider call does. Success for the whole stage: a resolved clarification result, or a valid no-questions/out-of-boundary result, with every question's resolution obtained (not fabricated) from the tool. Failure: the reasoning-core mode (a) exhausts its retry cap. Exhausted (mode (a) only): the fixed reasoning-core attempt cap. Mode (b) has no "exhausted" outcome of its own at the stage level — see the human-interface column and "Outer-loop concerns" for how an unresolved wait is handled without inventing a false stage-level timeout. | The wait for the idea owner's response happens inside S1's own inner loop, as the result of S1's own tool call (ECP-001) — this is S1's own envelope, not an outer-loop concern (contrast with the pre-ECP-001 design). If the idea owner never responds, the project remains in a pending-input state indefinitely rather than proceeding with fabricated answers (NFR-02) — there is no timeout that silently substitutes a default, and this is not treated as stage "exhaustion," since exhaustion in this design means a bounded, retried mechanism gave up, and an indefinite human wait is not that. |
+| S2: Frame the problem | In: the idea owner's raw input, plus S1's resolved clarification result — both read from memory by the outer control loop when it invokes S2 (S1's output now includes what was previously two separately-provenanced inputs; see "Outer-loop concerns" below). Out: the discovery summary, including the structured open-questions field from question 4 above, persisted so S3 (and a later regeneration) can read it without re-running S1 or S2. | Shape: output matches the `DiscoverySummary` schema, and every material claim carries one of the four certainty labels (FR-05) — reject if any required claim is unlabeled. Content: every question skipped or deferred in S1's resolved result must appear in S2's structured open-questions field (the check that resolves question 4) — reject and retry if any is missing. | Success: a certainty-labeled, schema-valid summary with no missing carried-forward question. Failure: schema-invalid output, or a missing carried-forward question, after retry. Exhausted: a small fixed retry cap (consistent with S1's reasoning-core mode), beyond which this is a provider/configuration failure rather than a content one. | None. S2 does not pause for approval; its output's certainty labels are what make its uncertainty visible downstream (per question 2), not a gate that stops the pipeline. |
 | S3: Propose scope and risks | In: the discovery summary from S2. Out: the scope proposal (with `included_capabilities`, `non_goals`, `follow_ons` as distinct fields per step 2's fix) and the risk list, persisted independently so S4 and S5 can each read exactly what they need without re-running S2 or S3. | Shape: output matches the scope/risk schema, `included_capabilities` and `non_goals` are disjoint sets (a capability cannot be both included and excluded — a structural check directly enforcing the step 2 fix), every risk has an impact, a certainty label, and a suggested validation/mitigation. Content: every excluded capability or open question from S2 that plausibly creates a risk must have a corresponding risk entry (the check step 1 already named: "omit a risk directly implied by an excluded capability... " is a must-never for the configuration; this is its validation-side enforcement). | Success: schema-valid, disjoint scope sets, risk coverage check passes. Failure: `included_capabilities`/`non_goals` overlap, or a risk-coverage gap, after retry. Exhausted: same fixed retry cap as S1/S2. | None required to run. Whether a human should confirm the scope boundary before S4 builds requirements against it was considered under question 2 and rejected as a mandatory gate — S4's requirements are traceably reversible (a later correction to S3 triggers S4's re-run, per question 3), so a blocking approval here is not required by the product requirements, only a single end-of-run review. |
 | S4: Specify requirements, stories, and acceptance criteria | In: discovery summary (S2), scope and risks (S3). Out: requirements, stories, and acceptance criteria, persisted together as one unit (they are validated together, per the check below) so a regeneration of S4 has a single, complete artifact to replace. | Shape: output matches the requirements/story/acceptance-criteria schema. Content, mechanically checked per the step 2 fix: every requirement's source capability is a member of S3's `included_capabilities`, not of `non_goals` or `follow_ons` — reject and retry if any requirement traces to an excluded capability; every MVP story has at least one linked requirement and at least one acceptance criterion — reject if any story is missing either. | Success: schema-valid, every requirement in-scope, every story has a requirement and criteria. Failure: an out-of-scope requirement, or a story missing a link or criteria, after retry. Exhausted: same fixed retry cap. | None required to run. This is the stage flagged as an open reliability question (question 5); its validation check is the concrete mitigation available at this step, and the check is content-specific enough (traces the exact step 2 fix) that a validation failure here is informative rather than a generic reject. |
 | S5: Plan delivery | In: requirements and stories (S4); risks and follow-ons (S3); open questions (S2) — the accumulated-inputs case step 1 identified as the main memory constraint. Out: the backlog, persisted as the final generation-stage artifact before assembly (traceability, export) takes over. | Shape: output matches the backlog schema; every item has a priority, a validation method, and at least one dependency reference or an explicit "no dependencies" marker. Content: every backlog item links to at least one S4 requirement or story (no orphaned items); every item's "unresolved blockers" field is checked against S3's risk list and S2's open-question list for anything that plausibly blocks it, rather than left empty by default; at least one item is marked as the starting item. | Success: schema-valid, every item linked, blockers populated where applicable, a starting item identified. Failure: an orphaned item, an empty blockers field where S3/S2 clearly named a relevant risk or question, or no starting item, after retry. Exhausted: same fixed retry cap. | None required to run S5 itself. S5's completion is what makes the draft package complete and ready for the single end-of-run human review (FR-13), which is the human-interface point for the run as a whole rather than for S5 specifically. |
 
 ### The stage envelope, applied to this design
 
-Every stage above follows the same shape the base document describes,
-specialized to this design's actual, small set of outcomes (no capability
-failures, since step 3 found none apply; retry stays within one stage
-rather than escalating automatically, since no requirement calls for
-automatic escalation mid-generation):
+**Revised by [ECP-001](./ecp/ECP-001-s1-clarification-as-tool.md).** Every
+stage other than S1 follows the same shape the base document describes,
+specialized to this design's small set of outcomes: retry stays within one
+stage rather than escalating automatically, since no requirement calls for
+automatic escalation mid-generation, and (for S2 through S5) there are no
+capability failures to account for, since step 3 found no capability
+applies to those four stages.
 
 ```
         memory in (accumulated                    memory out
@@ -527,7 +590,7 @@ automatic escalation mid-generation):
              |                              +--------------------+
              v                              | persisted, keyed   |
   +----------------------------------+      | to this stage, for |
-  |  Stage N                          |     | later stages and   |
+  |  Stage N (S2-S5)                  |     | later stages and   |
   |    reasoning core config (step 2) |---->| for FR-13 re-run   |
   |    capabilities: none   (step 3)  |     +--------------------+
   +----------------------------------+
@@ -550,34 +613,84 @@ automatic escalation mid-generation):
                no success-shaped package)
 ```
 
+**S1's envelope is different, and is drawn separately** because it is the
+one stage with a capability (step 3) and, per ECP-001, the one stage whose
+inner loop includes an unbounded human-response wait that must not be
+conflated with its bounded reasoning-core retry cap:
+
+```
+        raw input (written to memory
+        by the outer loop, below)
+             |
+             v
+  +--------------------------------------+
+  |  S1                                   |
+  |    reasoning core config (step 2)     |
+  |    capabilities: ask/collect-answers  |
+  |                          (step 3)     |
+  |                                        |
+  |    draft questions (reasoning-core    |
+  |    call; bounded retry cap applies)   |
+  |         |                             |
+  |         v                             |
+  |    call ask/collect-answers tool -----+-----> idea owner answers,
+  |         |                             |       skips, or defers
+  |         |<----------------------------+       (unbounded wait;
+  |         v                             |       no retry cap)
+  |    produce resolved output            |
+  |    (reasoning-core call; bounded      |
+  |    retry cap applies)                 |
+  +--------------------------------------+
+             |
+             v
+  +--------------------+
+  |  Validation         |--reject (within reasoning-core retry cap)--> retry
+  |  (shape + content,  |                                              the reasoning-core
+  |   per table above)  |                                              portion of S1
+  +--------------------+
+             |
+     +-------+-------------------+
+     |                           |
+   pass                  reasoning-core retry
+     |                    cap exhausted
+     v                           |
+  next stage (S2)                v
+                          provider/configuration
+                          failure (NFR-05)
+```
+
+The unbounded wait inside S1's loop has no arrow into "exhausted" in this
+diagram — an indefinite pending-input state is not the same outcome as a
+bounded mechanism giving up, and treating it as "exhausted" would either
+falsely fail a run that is only waiting on the idea owner, or require
+inventing a timeout the product requirements do not call for (NFR-02
+prohibits substituting a fabricated answer, which is what a forced timeout
+would effectively require).
+
 No stage in this design has an "escalate to human mid-generation" path out
 of its validation box, unlike the base document's general envelope —
 question 2 above establishes that this product's human-interface point is
-a single pause after S1 plus a single end-of-run review, not a per-stage
+the wait inside S1 plus a single end-of-run review, not a per-stage
 escalation gate. A validation failure that exhausts its retry cap becomes a
 failed run (NFR-05), surfaced to the idea owner with a useful next action
 (FR-16), not a mid-run request for human input.
 
-The diagram's "pass leads to next stage" arrow describes every stage
-*except* the step between S1 and S2, which is not a stage property at all
-— it is covered separately below, in "Outer-loop concerns," since it
-belongs to the outer control loop rather than to either stage's envelope.
-
 ### Outer-loop concerns
 
-The per-stage table and the envelope diagram above describe what happens
-inside each stage's own boundary. Two things in this design belong to the
+The per-stage table and the envelope diagrams above describe what happens
+inside each stage's own boundary. One thing in this design belongs to the
 outer control loop instead — the orchestrator that invokes each stage and
-sequences them — and are recorded here rather than attributed to a stage,
+sequences them — and is recorded here rather than attributed to a stage,
 per the base document's step 4 guidance.
 
 **Writing the idea owner's raw input into memory.** Before S1 can run, the
 idea owner's raw input has to already be in memory for S1 to read (S1's
-memory row above says "persisted at intake," which describes *that* it is
-persisted, not *who* persists it). Persisting it is not part of S1 itself
-— S1's inner loop begins only once that input already exists in memory —
-so it is the outer control loop's responsibility, performed once, as the
-very first action of a run, before S1 is invoked at all:
+memory row above says it is "written to memory by the outer control loop
+before S1 is invoked," naming who does this, not merely that it happens).
+Persisting it is not part of S1 itself — S1's inner loop begins only once
+that input already exists in memory — so it is the outer control loop's
+responsibility, performed once, as the very first action of a run, before
+S1 is invoked at all:
 
 ```
   Idea owner provides raw input (FR-01, intake; not a stage)
@@ -589,47 +702,20 @@ very first action of a run, before S1 is invoked at all:
   Outer control loop invokes S1
 ```
 
-**The pause between S1 and S2.** For every stage except S1, `pass` in the
-envelope diagram above genuinely does mean the next stage starts
-immediately. Between S1 and S2 specifically, S1's own completion (a valid
-question list, or an explicit no-questions/out-of-boundary result) does
-not mean S2 starts — the idea owner must first answer, skip, or defer each
-question (FR-03). This is not an escalation out of S1's own validation (S1
-already passed); it is the outer control loop invoking the human-interface
-component as its own step between two stage invocations, the same way it
-invokes each stage itself:
-
-```
-  Outer control loop invokes S1
-        |
-        v
-  S1 completes (passes validation): a question list, or explicit
-  no-questions/out-of-boundary result
-        |
-        v
-  Outer control loop invokes the human-interface component
-  (idea owner answers, skips, or defers each question; skipped
-  if S1 returned zero questions)
-        |
-        v
-  Outer control loop invokes S2, reading:
-    - the original raw input, written to memory before S1 ran
-    - the answers/skips/deferrals just collected
-```
-
-The second diagram also corrects an imprecision in S2's memory row above:
-S2's two inputs are not both "given in response to S1's questions." The
-raw input was written once, before S1 ever ran; only the
-answers/skips/deferrals are new, collected after S1 completes. Both are
-read from memory by S2 when the outer loop invokes it — S2 does not receive
-either directly from the idea owner.
-
-If the idea owner never responds to the pause, the project remains in a
-pending-input state indefinitely rather than proceeding with fabricated
-answers (NFR-02) — there is no timeout that silently substitutes a default;
-this restates what S1's human-interface cell already says, attributed here
-to the outer loop rather than to S1, since S1 has already completed by the
-time this wait begins.
+**Revised by ECP-001 — this section previously had a second entry, now
+removed.** Before ECP-001, the pause where the idea owner answered S1's
+questions was an outer-loop concern: the outer loop invoked S1, then
+separately invoked the human-interface component before invoking S2. Per
+ECP-001, that wait is now inside S1's own inner loop (drawn in the S1
+envelope diagram above), so it is no longer an outer-loop concern — it is
+S1's own envelope, the same way any other stage's reasoning-core call is
+that stage's own envelope. The outer loop's relationship to S1 is now
+identical in shape to its relationship to every other stage: invoke once,
+receive one resolved result back. This is the one thing ECP-001 changes
+about the outer loop's own responsibilities: it now has fewer of them, not
+more — the base document's "Outer-loop concerns" pattern still applies in
+general, but this specific design only has one instance of it left
+(intake persistence) rather than two.
 
 ### System-level termination
 
@@ -646,13 +732,22 @@ failed":
   stage; no downstream stage runs; the failure and the last completed stage
   are surfaced to the idea owner (FR-16) with a next action, and no
   package is written as though generation succeeded.
-- **Run exhausted, as a distinct case:** not applicable at the run level in
-  this design — "exhausted" only occurs at the single-stage retry-cap
-  level (per stage above), and a stage-level exhaustion is treated as a
-  run failure, not as its own ambiguous run-level outcome. This is
-  possible only because retry is bounded and small per stage; there is no
-  scenario in this design where the run continues indefinitely without
-  reaching either success or a stage failure.
+- **Run exhausted, as a distinct case:** not applicable at the run level for
+  the reasoning-core retry-cap mechanism — "exhausted" in that sense only
+  occurs at the single-stage retry-cap level (per stage above), and a
+  stage-level exhaustion there is treated as a run failure, not as its own
+  ambiguous run-level outcome. **Revised by ECP-001:** this is no longer
+  true without qualification, because S1's tool-call wait is explicitly
+  unbounded (see S1's termination row and envelope, above). A run can now
+  be in a **pending-input** state indefinitely — this is not "the run
+  continues indefinitely" in the sense of consuming reasoning-core calls or
+  cost without bound (NFR-02's "no fabricated answers" is what prevents
+  that); it is the run correctly waiting on the one thing only the idea
+  owner can provide. Pending-input is therefore a fourth, distinct run
+  state, alongside success, failure, and (reasoning-core) exhaustion — not
+  a new kind of failure, and not silently folded into either "success" or
+  "failure": the run has neither succeeded nor failed; it has not yet
+  received what it needs to determine which.
 
 ### Open questions carried into step 5
 
@@ -666,6 +761,15 @@ failed":
   whatever the chosen framework offers by default is a step 5 question:
   this step only establishes that per-stage persistence is required, not
   how it is implemented.
+- (ECP-001) How a resumed, pending-input run is represented at the
+  implementation level — whether S1's inner loop literally suspends
+  mid-execution while awaiting the idea owner, or whether S1 is invoked
+  once to draft questions and a separate, later invocation resumes it with
+  the collected answers already available — is a framework/implementation
+  question for step 5, not resolved here. This step establishes only the
+  product-level requirement: from the outer loop's perspective, S1 is one
+  invocation with one resolved result, however that invocation is actually
+  implemented under a chosen framework.
 
 ## Step 5 — Framework mapping
 
