@@ -4,14 +4,14 @@
 **Author:** Design session, 2026-09-28
 **Affects:** [`03-agentic-system-design.md`](../03-agentic-system-design.md) —
 Step 1 (Stages and sequence), Step 2 (Reasoning-core configurations),
-Step 3 (Capability contracts). All three are frozen (merged in
+Step 3 (Capability contracts), and Step 4 (Control relationships). All four
+are frozen (merged in
 [#17](https://github.com/natank/project-discovery-planning-assistant/pull/17),
 [#18](https://github.com/natank/project-discovery-planning-assistant/pull/18),
-[#19](https://github.com/natank/project-discovery-planning-assistant/pull/19)).
-**Also affects:** the in-progress Step 4 draft (branch
-`docs/step4-control-relationships`, not yet merged), which was written
-against the current (unmodified) Step 1–3 design and will need rework if
-this proposal is accepted.
+[#19](https://github.com/natank/project-discovery-planning-assistant/pull/19),
+[#21](https://github.com/natank/project-discovery-planning-assistant/pull/21)),
+including Step 4's "Outer-loop concerns" subsection, which this proposal
+would partially undo (see Step 4 section below).
 
 ## Summary
 
@@ -92,7 +92,7 @@ Two arguments were raised in favor of this change during design review:
   retry/idempotency design needed," "capability dispatch... not
   applicable") would both need to be retracted and replaced.
 
-### Step 4 (Control relationships) — in-progress draft, not yet merged
+### Step 4 (Control relationships) — frozen, merged in #21
 
 - S1's **termination** definition (currently: success = a valid question
   list; exhausted = a small fixed number of reasoning-core-call attempts)
@@ -149,6 +149,7 @@ before generation moves on to S2.
 
 ## Disposition
 
-Pending committee review. If accepted, Steps 1–3 will be reopened for
-targeted revision (not a full redo), and the in-progress Step 4 draft will
-be revised before being proposed for merge.
+Pending committee review. If accepted, Steps 1–4 (all currently frozen)
+will be reopened for targeted revision, not a full redo, and each revision
+will go through review before being merged, consistent with how each step
+was originally reviewed and merged.
